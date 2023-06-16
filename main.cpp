@@ -10,8 +10,7 @@
 extern "C" {
 #endif
 
-using namespace std;
-
+/*
 #define TOK "/VAL/"
 #define TOKLEN 5
 
@@ -39,7 +38,7 @@ struct simple_walker: pugi::xml_tree_walker
             for (int i = 0; i < (int)path_elements.size(); i++)
                 xps << path_elements[i] << "/";
 
-            xps << node.name() << "@" << attr.name() << TOK << attr.value();
+            xps << node.name() << "[@" << attr.name() << "]" << TOK << attr.value();
 
             cout << xps.str() << endl;
 
@@ -49,6 +48,64 @@ struct simple_walker: pugi::xml_tree_walker
         return true; // continue traversal
     }
 };
+*/
+
+void print_query_result(pugi::xpath_node_set results) {
+    for (const auto& node: results) {
+        std::cout << node.node().path() << std::endl;
+        for (pugi::xml_attribute& attr: node.node().attributes()) {
+            std::cout << attr.name() << ": " << attr.value() << std::endl;
+        }
+    }
+}
+
+
+void processNode(pugi::xml_node& mpd1_node, pugi::xml_document& mpd2, std::string xpath="") {
+
+    xpath = xpath + "/" + mpd1_node.name();
+    
+    if (!mpd1_node.attributes().empty()) {
+        std::cout << "XPath: " << xpath << std::endl;
+    }
+
+    std::stringstream elem_attr_filter;
+    if (!mpd1_node.attributes().empty()) {
+
+        elem_attr_filter << "[";
+        for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
+            elem_attr_filter << "@" << it->name() << "=" << "'" << it->value() << "'";
+            if (std::next(it) != mpd1_node.attributes().end()) {
+                elem_attr_filter << " and ";
+            }
+            if (it->name() == (std::string)"id") {
+                xpath = xpath + "[@" + it->name() + "=" + "'" + it->value() + "'" + "]";
+            }
+            std::cout << "  " << it->name() << ": " << it->value() << std::endl;
+        }
+        elem_attr_filter << "]";
+
+        std::string full_query = xpath + elem_attr_filter.str();
+
+        //Check if node exists in mpd2
+        pugi::xpath_query element_query(full_query.c_str());
+        pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);
+
+        //TODO Clean up Query string, duplicate brackets on XPath query i.e. "/.../Representation[@id='Video1_4'][@bandwidth='1200000' and @id='Video1_4' and ...]"
+        std::cout << full_query << std::endl;
+        if (results.empty()) {
+            std::cout << "Element does not exist in MPD2!\n" << std::endl;
+        } else {
+            std::cout << "Element exists in MPD2!!!!" << std::endl;
+            std::cout << "" << std::endl;
+        }
+
+    }
+    
+    
+    for (pugi::xml_node child : mpd1_node.children()) {
+        processNode(child, mpd2, xpath); // Recursive call to process child nodes
+    }
+}
 
 
 void morph_diffs(const char* mpd1) {
@@ -56,14 +113,14 @@ void morph_diffs(const char* mpd1) {
     const char* current_mpd = "current.mpd";
     struct stat buffer;
 
-    cout << "\n\n" << "Starting Diff..." << "\n\n";
+    std::cout << "\n\n" << "Starting Diff..." << "\n\n";
 
     if (stat (current_mpd, &buffer) != 0)
     {
         //there is no current mpd, copy incoming to current and return
-        cout << "creating current.mpd because it doesn't exist" << endl;
-        ifstream src(mpd1);
-        ofstream dst(current_mpd);
+        std::cout << "creating current.mpd because it doesn't exist" << std::endl;
+        std::ifstream src(mpd1);
+        std::ofstream dst(current_mpd);
         dst << src.rdbuf();
         return;
     }
@@ -76,24 +133,23 @@ void morph_diffs(const char* mpd1) {
     pugi::xml_document current_doc;
     current_doc.load_file((const char*)current_mpd);
 
-    string mpd1_ptime = mpd1_doc.child("MPD").attribute("publishTime").value();
-    string current_ptime = current_doc.child("MPD").attribute("publishTime").value();
+    std::string mpd1_ptime = mpd1_doc.child("MPD").attribute("publishTime").value();
+    std::string current_ptime = current_doc.child("MPD").attribute("publishTime").value();
 
     if (mpd1_ptime == current_ptime)
     {
         //publishTime is the same in current and incoming, return
-        cout << "mpd1 ptime    " << mpd1_ptime << endl;
-        cout << "current ptime " << current_ptime << endl;
-        cout << "they are the same, done" << endl;
+        std::cout << "mpd1 ptime    " << mpd1_ptime << std::endl;
+        std::cout << "current ptime " << current_ptime << std::endl;
+        std::cout << "they are the same, done" << std::endl;
         return;
     }
-    
+    /*
     simple_walker walker;
     mpd1_doc.traverse(walker); //array of xpaths in walker.all_elements
-    
+
     size_t pos = 0;
-    //for (int i = 0; i < (int)walker.all_elements.size(); i++) 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < (int)walker.all_elements.size(); i++)
     {
         cout << endl;
 
@@ -102,27 +158,32 @@ void morph_diffs(const char* mpd1) {
         string elpath = walker.all_elements[i].substr(0, pos);
         string value = walker.all_elements[i].substr(pos + TOKLEN);
 
-        cout << elpath << "\n";
-        cout << value << endl;
+        //cout << elpath << "\n";
+        //out << value << endl;
         
         //std::string val = node.node().attribute("scanType").value();
     }
-    
-    //Create Diff File
+    */
 
+    pugi::xml_node root = current_doc.child("MPD");
+    processNode(root, mpd1_doc); // Start recursive parsing from the root node
+
+    /***************
+    Create Diff File
+    ****************/
     //copy mpd1 to current
 }
 
 int main (int argc, char *argv[]) {
 
-    string inmpd_o;
+    std::string inmpd_o;
 
     try
     {
         cxxopts::Options options(argv[0], "diffstub VOD stand-alone tool");
 
         options.set_width(80).add_options()
-            ("u", "mpd file, do mpd diffs with current", cxxopts::value<string>())
+            ("u", "mpd file, do mpd diffs with current", cxxopts::value<std::string>())
             ("h,help", "Print this help")
             ;
 
@@ -130,16 +191,16 @@ int main (int argc, char *argv[]) {
 
         if ( result.count("help") || argc == 1 )
         {
-            cout << options.help() << endl;
+            std::cout << options.help() << std::endl;
             exit(0);
         }
 
         if (result.count("u"))
-            inmpd_o = result["u"].as<string>().c_str();
+            inmpd_o = result["u"].as<std::string>().c_str();
     }
     catch (const cxxopts::OptionException& e)
     {
-        cout << "error parsing options: " << e.what() << endl;
+        std::cout << "error parsing options: " << e.what() << std::endl;
         exit(1);
     }
 
