@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "C/C++: g++ build and debug active file",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/diffstub",
+            "args": ["-u", "manifest_2.mpd"],
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "version": "0.2.0",
+    "compounds": []
+}
