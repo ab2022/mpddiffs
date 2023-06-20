@@ -59,51 +59,55 @@ void print_query_result(pugi::xpath_node_set results) {
     }
 }
 
-
-void processNode(pugi::xml_node& mpd1_node, pugi::xml_document& mpd2, std::string xpath="") {
-
+// TODO: Change Naming convention (mpd)
+void processNode(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::string xpath="") {
     xpath = xpath + "/" + mpd1_node.name();
-    
+
+    std::stringstream elem_attr_filter_ss;
+    std::stringstream id_info_ss;
     if (!mpd1_node.attributes().empty()) {
         std::cout << "XPath: " << xpath << std::endl;
-    }
 
-    std::stringstream elem_attr_filter;
-    if (!mpd1_node.attributes().empty()) {
-
-        elem_attr_filter << "[";
+        elem_attr_filter_ss << "[";
         for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
-            elem_attr_filter << "@" << it->name() << "=" << "'" << it->value() << "'";
-            if (std::next(it) != mpd1_node.attributes().end()) {
-                elem_attr_filter << " and ";
-            }
+
             if (it->name() == (std::string)"id") {
-                xpath = xpath + "[@" + it->name() + "=" + "'" + it->value() + "'" + "]";
+                id_info_ss << "[@" << it->name() << "='" << it->value() << "']";
             }
+
+            elem_attr_filter_ss << "@" << it->name() << "=" << "'" << it->value() << "'";
+            if (std::next(it) != mpd1_node.attributes().end()) {
+                elem_attr_filter_ss << " and ";
+            }
+            
+            // Print out object attributes
             std::cout << "  " << it->name() << ": " << it->value() << std::endl;
         }
-        elem_attr_filter << "]";
+        elem_attr_filter_ss << "]";
 
-        std::string full_query = xpath + elem_attr_filter.str();
+        std::string full_query = xpath + elem_attr_filter_ss.str();
+        std::cout << "MPD2 Query: " << full_query << std::endl;
 
         //Check if node exists in mpd2
         pugi::xpath_query element_query(full_query.c_str());
         pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);
 
-        //TODO Clean up Query string, duplicate brackets on XPath query i.e. "/.../Representation[@id='Video1_4'][@bandwidth='1200000' and @id='Video1_4' and ...]"
-        std::cout << full_query << std::endl;
         if (results.empty()) {
             std::cout << "Element does not exist in MPD2!\n" << std::endl;
         } else {
-            std::cout << "Element exists in MPD2!!!!" << std::endl;
-            std::cout << "" << std::endl;
+            std::cout << "Element exists in MPD2.\n" << std::endl;
         }
 
     }
+
+    // If the 'id' field was present, add it to the xpath for recursive processing 
+    if (!id_info_ss.str().empty()) {
+        xpath = xpath + id_info_ss.str();
+    }
     
-    
-    for (pugi::xml_node child : mpd1_node.children()) {
-        processNode(child, mpd2, xpath); // Recursive call to process child nodes
+    // Process child nodes recursivly
+    for (pugi::xml_node mpd1_child : mpd1_node.children()) {
+        processNode(mpd1_child, mpd2, xpath);
     }
 }
 
