@@ -320,33 +320,31 @@ void morph_diffs(const char* client_mpd) {
     print_diffset(client_missing);
 
     /***************
-    Compare Diff Sets - TODO Replace attribute sets with Maps for more efficient searching? Key: XMLAttribute.name -> Value: XMLAttribute.value
+    Compare Diff Sets
     ****************/
     std::map<XMLElement, std::string> delta_map;
     for (const auto& pair: current_missing) {
         auto it = client_missing.find(pair.first);
 
         if (it != client_missing.end()) {
-            // Add element to update_map with replace operation
+            // Add element to update_map with 'REPLACE' operation
             delta_map[it->second] = "REPLACE";
 
             // Erase the entry from the client map
             client_missing.erase(it->first);
-
             
         } else {
-            std::cout << "Key " << it->first << " does not exist in the map." << std::endl;
-            // Add element to update_map with add operation
-            delta_map[it->second] = "ADD";
+            std::cout << "Key " << pair.first << " does not exist in the map." << std::endl;
+            // Add element to update_map with 'REMOVE' operation
+            delta_map[pair.second] = "REMOVE";
         }
     }
-
-    // What is left in the client_missing map should be 'REMOVED'
+    // What is left in the client_missing map should be 'ADDED'
     for (const auto& pair: client_missing) {
-        delta_map[pair.second] = "REMOVE";
+        delta_map[pair.second] = "ADD";
     }
 
-    
+    // Print out Diffset
     for (const auto& pair: delta_map) {
         std::cout << "XPath: " << pair.first.getXPath() << std::endl;
         std::cout << "Directive: " << pair.second << std::endl;
@@ -356,13 +354,15 @@ void morph_diffs(const char* client_mpd) {
         std::cout << std::endl;
     }
 
-    
-    
-    
-   
-
-    
-
+    /*
+        TODO/BUG NOTES:
+        - Elements that can exist more than once on the same XPath are always being tagged as updated (i.e. Segments, Representation)
+            - Need to reference RFC 5261 (https://datatracker.ietf.org/doc/html/rfc5261) for implementation details, can possiblibly solved with
+            implementation of XMLElement.similar() function
+            - Use examples from rfc5261 / Find a testing framework
+        - Elements added in the current MPD on a new XPath are recorded successfully
+        - Elements whos xpath are removed in the current MPD are recorded successfully
+    */
 
 
     /***************
