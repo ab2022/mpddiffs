@@ -5,6 +5,7 @@
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
          <SegmentTemplate initialization="video-$Bandwidth$-init.mp4" media="video-$Bandwidth$-$Time$.mp4v" startNumber="859540274" timescale="50">
             <SegmentTimeline>
+               <S d="91" r="14" t="146137035"/>
                <S d="96" r="15" t="146138400"/>
             </SegmentTimeline>
          </SegmentTemplate>

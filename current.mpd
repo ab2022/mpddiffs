@@ -5,7 +5,8 @@
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
          <SegmentTemplate initialization="video-$Bandwidth$-init.mp4" media="video-$Bandwidth$-$Time$.mp4v" startNumber="859540274" timescale="50">
             <SegmentTimeline>
-               <S d="91" r="12" t="146137824"/>
+               <S d="96" r="15" t="146138400"/>
+               <S d="96" r="16" t="146139035"/>
             </SegmentTimeline>
          </SegmentTemplate>
          <Representation bandwidth="800000" codecs="avc1.4d401e" frameRate="25" height="360" id="Video1_5" sar="1:1" scanType="progressive" width="640"/>
