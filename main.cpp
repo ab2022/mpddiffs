@@ -7,45 +7,12 @@
 #include "pugixml.hpp"
 #include "cxxopts.hpp"
 
-/*
-class XMLAttribute {
-private:
-    std::string name;
-    std::string value;
-
-public:
-    const std::string& getName() const {
-        return this->name;
-    }
-
-    const std::string& getValue() const {
-        return this->value;
-    }
-
-    void setName(std::string name) {
-        this->name = name;
-    }
-
-    void setValue(std::string value) {
-        this->value = value;
-    }
-
-    bool operator==(const XMLAttribute& other) const {
-        return name == other.name && value == other.value;
-    }
-
-    bool operator<(const XMLAttribute& other) const {
-        return name < other.name;
-    }
-};
-*/
 
 class XMLElement {
 private:
     std::string xpath;
     std::string name;
     std::unordered_map<std::string, std::string> attributes;
-    //std::set<XMLAttribute> attributes;
     //std::vector<XMLElement> children;
 public:
     const std::string& getXPath() const {
@@ -73,20 +40,30 @@ public:
     }
 
     bool similar(const XMLElement& other) const {
-        /*
         if (this->xpath == other.xpath) {
-            for (const XMLAttribute& attrib: this->attributes) {
-                if (other.attributes.find(attrib) != other.attributes.end()) {
-                    return true;
+            
+            size_t total_attrib = this->attributes.size();
+            size_t similar_attrib = 0;
+
+            for (const auto& pair: this->attributes) {
+                auto it = other.getAttributes().find(pair.first);
+
+                if (it != other.getAttributes().end()) {
+                    if (pair.second == it->second) {
+                        similar_attrib++;
+                    }
                 }
             } 
-            return false;
+
+            if (static_cast<float>(similar_attrib)/total_attrib > .50) {
+                return true;
+            } else {
+                return false;
+            }
         } 
         else {
             return false;
         }
-        */
-       return false;
     }
 
     bool operator==(const XMLElement& other) const {
@@ -163,28 +140,23 @@ struct simple_walker: pugi::xml_tree_walker
 };
 */
 
-void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::string xpath="") {
+void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
     xpath = xpath + "/" + mpd1_node.name();
     XMLElement element;
-    element.setXPath(xpath);
+    //element.setXPath(xpath);
     element.setName(mpd1_node.name());
 
     std::stringstream elem_attr_filter_ss;
     std::stringstream id_info_ss;
-    if (!mpd1_node.attributes().empty()) {
-        std::cout << "XPath: " << xpath << std::endl;
 
+    // If the element contains attributes, append them to the XPath query
+    if (!mpd1_node.attributes().empty()) {
         elem_attr_filter_ss << "[";
         for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
 
             if (it->name() == (std::string)"id") {
                 id_info_ss << "[@" << it->name() << "='" << it->value() << "']";
             }
-
-            //XMLAttribute attrib;
-            //attrib.setName(it->name());
-            //attrib.setValue(it->value());
-            //element.addAttribute(attrib);
             element.addAttribute(it->name(), it->value());
 
             elem_attr_filter_ss << "@" << it->name() << "=" << "'" << it->value() << "'";
@@ -200,9 +172,20 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         std::string full_query = xpath + elem_attr_filter_ss.str();
         std::cout << "MPD2 Query: " << full_query << std::endl;
 
-        //Check if node exists in mpd2
+        if (!id_info_ss.str().empty()) {
+            xpath = xpath + id_info_ss.str();
+        } else {
+            index_map[xpath]++;
+            std::cout << xpath << "[" << index_map[xpath] << "]" << std::endl;
+        }
+
+
+        element.setXPath(xpath);
+        std::cout << "XPath: " << xpath << std::endl;
+
+        // Check if node exists in mpd2
         pugi::xpath_query element_query(full_query.c_str());
-        pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);
+        pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);  
 
         if (results.empty()) {
             std::cout << "Element does not exist in MPD2!\n" << std::endl;
@@ -220,13 +203,24 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
     }
 
     // If the 'id' field was present, add it to the xpath for recursive processing 
+    /*
     if (!id_info_ss.str().empty()) {
         xpath = xpath + id_info_ss.str();
     }
+    */
+
+   /*
+   TODO: Track child node index when parsing through the document, and record in XMLElement object
+   Index will be used during comparison to inject/remove elements at certain indexes (i.e Segments <S\>).  Can possibly use logic like:
+   if node.attributes.empty() && !node.children.empty()
+        call process node with child index counter
+        add child index to XPath ie. '/MPD/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline/S[1]'
+    
+   */
     
     // Process child nodes recursivly
     for (pugi::xml_node mpd1_child : mpd1_node.children()) {
-        process_node(mpd1_child, mpd2, diffset, xpath);
+        process_node(mpd1_child, mpd2, diffset, index_map, xpath);
     }
 }
 
@@ -277,6 +271,7 @@ void morph_diffs(const char* client_mpd) {
         std::cout << "they are the same, done" << std::endl;
         return;
     }
+
     /*
     simple_walker walker;
     mpd1_doc.traverse(walker); //array of xpaths in walker.all_elements
@@ -303,14 +298,26 @@ void morph_diffs(const char* client_mpd) {
     ****************/
     pugi::xml_node client_root = client_doc.child("MPD");
     // contains elements missing in current MPD
+    std::unordered_map<std::string, u_int> current_imap;
     std::unordered_map<std::string, XMLElement> current_missing;
-    process_node(client_root, current_doc, current_missing);
+    process_node(client_root, current_doc, current_missing, current_imap);
 
 
     pugi::xml_node current_root = current_doc.child("MPD");
     // contains elements missing in client MPD
+    std::unordered_map<std::string, u_int> client_imap;
     std::unordered_map<std::string, XMLElement> client_missing;
-    process_node(current_root, client_doc, client_missing);
+    process_node(current_root, client_doc, client_missing, client_imap);
+
+
+    /*
+        If we use a set instead of a map, the combination of S Path + attributes will make unique objects,
+        however searching for keys in the map become dificulet when we only care abut xpath
+
+        Unoredered map should be of Xpath -> List<XMLElement> (list is ordered)
+        if list is > 0 compare object indepenedently for add /remove /replace
+    
+    */
 
 
     std::cout << "\nElements present in Client MPD but missing in Current MPD: " << std::endl;
@@ -353,6 +360,19 @@ void morph_diffs(const char* client_mpd) {
             std::cout << "  " << attr.first << ": " << attr.second << std::endl;
         std::cout << std::endl;
     }
+
+    /**
+     * Proposed Fix for indexing
+     * 1) Keep map of xpath with associated element index relative to the parent
+     * Pros: Fast Map access
+     * Cons: Memory Consumption (may be an issue with exxeccively large mpd)
+     * 
+     * 
+     * 2) For each missing element, search Xpath of own document, Match element with index in list returned to determine XPath Selector Index
+     * Pros: Only execute for missing elements
+     * Cons: Each time we execute an expath query it requires computational resources, to minimize this would
+     * Want to check the existance of a similar element 
+    */
 
     /*
         TODO/BUG NOTES:
