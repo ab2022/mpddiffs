@@ -7,6 +7,7 @@
             <SegmentTimeline>
                <S d="96" r="15" t="146138400"/>
                <S d="96" r="16" t="146139035"/>
+               <S d="96" r="17" t="146140222"/>
             </SegmentTimeline>
          </SegmentTemplate>
          <Representation bandwidth="800000" codecs="avc1.4d401e" frameRate="25" height="360" id="Video1_5" sar="1:1" scanType="progressive" width="640"/>

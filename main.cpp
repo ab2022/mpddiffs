@@ -15,6 +15,8 @@ private:
     std::unordered_map<std::string, std::string> attributes;
     //std::vector<XMLElement> children;
 public:
+    size_t index;
+
     const std::string& getXPath() const {
         return this->xpath;
     }
@@ -140,17 +142,25 @@ struct simple_walker: pugi::xml_tree_walker
 };
 */
 
+/**
+ * - Recursive function for processing the XMLTree and identifiying nodes that do not exist in mpd2
+ * - Nodes that cannot be identified in mpd2 are copied into an XMLElement object in the pass by reference diffset
+ * - The index_map is used to track index of identites that do not contain an "id" field
+ * 
+*/
 void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
     xpath = xpath + "/" + mpd1_node.name();
     XMLElement element;
-    //element.setXPath(xpath);
     element.setName(mpd1_node.name());
+    std::string full_query;
 
-    std::stringstream elem_attr_filter_ss;
-    std::stringstream id_info_ss;
-
-    // If the element contains attributes, append them to the XPath query
+    // If the element contains attributes
     if (!mpd1_node.attributes().empty()) {
+        std::stringstream elem_attr_filter_ss;
+        std::stringstream id_info_ss;
+
+        // Create a filter stream that populates based on attribute values,
+        // Used for searching for identical node in other XML document
         elem_attr_filter_ss << "[";
         for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
 
@@ -163,51 +173,48 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             if (std::next(it) != mpd1_node.attributes().end()) {
                 elem_attr_filter_ss << " and ";
             }
-            
-            // Print out object attributes
-            std::cout << "  " << it->name() << ": " << it->value() << std::endl;
         }
         elem_attr_filter_ss << "]";
 
-        std::string full_query = xpath + elem_attr_filter_ss.str();
-        std::cout << "MPD2 Query: " << full_query << std::endl;
+        full_query = xpath + elem_attr_filter_ss.str();
+        
 
         if (!id_info_ss.str().empty()) {
             xpath = xpath + id_info_ss.str();
         } else {
             index_map[xpath]++;
-            std::cout << xpath << "[" << index_map[xpath] << "]" << std::endl;
+            element.index = index_map[xpath];
         }
 
+    } else {
+        index_map[xpath]++;
+        element.index = index_map[xpath];
+        full_query = xpath;
+    }
 
+    std::cout << "MPD2 Query: " << full_query << std::endl;
+
+    // Check if node exists in mpd2
+    pugi::xpath_query element_query(full_query.c_str());
+    pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);  
+
+    if (results.empty()) {
+        std::cout << "Element does not exist in MPD2!" << std::endl;
+        //add to diffset
+        std::stringstream idx_ss;
+        idx_ss << "[" << index_map[xpath] << "]";
+        xpath = xpath + idx_ss.str();
         element.setXPath(xpath);
-        std::cout << "XPath: " << xpath << std::endl;
-
-        // Check if node exists in mpd2
-        pugi::xpath_query element_query(full_query.c_str());
-        pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);  
-
-        if (results.empty()) {
-            std::cout << "Element does not exist in MPD2!\n" << std::endl;
-            //add to diffset
-            //diffset.insert(element);
-            diffset[xpath] = element;
-        } else {  
-            if (results.size() > 1) {
-                std::cout << "ERROR! Elements exists " << results.size() << " times in MPD2!";
-            } else {
-                std::cout << "Element exists in MPD2.\n" << std::endl;
-            }
+        diffset[xpath] = element;
+    } else {
+        if (results.size() > 1) {
+            std::cout << "ERROR! Elements exists " << results.size() << " times in MPD2!";
+            exit(1);
+        } else {
+            std::cout << "Element exists in MPD2." << std::endl;
         }
-
     }
-
-    // If the 'id' field was present, add it to the xpath for recursive processing 
-    /*
-    if (!id_info_ss.str().empty()) {
-        xpath = xpath + id_info_ss.str();
-    }
-    */
+    std::cout << "XPath: " << xpath << std::endl << std::endl;
 
    /*
    TODO: Track child node index when parsing through the document, and record in XMLElement object
@@ -315,8 +322,7 @@ void morph_diffs(const char* client_mpd) {
         however searching for keys in the map become dificulet when we only care abut xpath
 
         Unoredered map should be of Xpath -> List<XMLElement> (list is ordered)
-        if list is > 0 compare object indepenedently for add /remove /replace
-    
+        if list is > 0 compare object indepenedently for add/remove/replace
     */
 
 
@@ -352,6 +358,7 @@ void morph_diffs(const char* client_mpd) {
     }
 
     // Print out Diffset
+    std::cout << "\n----------------------------------------\n" << std::endl;
     for (const auto& pair: delta_map) {
         std::cout << "XPath: " << pair.first.getXPath() << std::endl;
         std::cout << "Directive: " << pair.second << std::endl;
@@ -376,12 +383,9 @@ void morph_diffs(const char* client_mpd) {
 
     /*
         TODO/BUG NOTES:
-        - Elements that can exist more than once on the same XPath are always being tagged as updated (i.e. Segments, Representation)
-            - Need to reference RFC 5261 (https://datatracker.ietf.org/doc/html/rfc5261) for implementation details, can possiblibly solved with
-            implementation of XMLElement.similar() function
-            - Use examples from rfc5261 / Find a testing framework
-        - Elements added in the current MPD on a new XPath are recorded successfully
-        - Elements whos xpath are removed in the current MPD are recorded successfully
+        - Use examples from rfc5261 / Find a testing framework
+        - Single Elements are detected for Add, Remove, Update
+        - No Testing done for nested elements
     */
 
 
