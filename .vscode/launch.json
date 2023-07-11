@@ -1,11 +1,19 @@
 {
     "configurations": [
         {
-            "name": "C/C++: g++ build and debug active file",
+            "name": "compare mpd2",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/diffstub",
             "args": ["-u", "manifest_2.mpd"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "compare mpd3",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/diffstub",
+            "args": ["-u", "manifest_3.mpd"],
             "cwd": "${workspaceFolder}"
         }
     ],
