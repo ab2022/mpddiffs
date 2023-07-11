@@ -42,28 +42,22 @@ public:
     }
 
     bool similar(const XMLElement& other) const {
-        if (this->xpath == other.xpath) {
-            
-            size_t total_attrib = this->attributes.size();
-            size_t similar_attrib = 0;
+        size_t total_attrib = this->attributes.size();
+        size_t similar_attrib = 0;
 
-            for (const auto& pair: this->attributes) {
-                auto it = other.getAttributes().find(pair.first);
+        for (const auto& pair: this->attributes) {
+            auto it = other.getAttributes().find(pair.first);
 
-                if (it != other.getAttributes().end()) {
-                    if (pair.second == it->second) {
-                        similar_attrib++;
-                    }
+            if (it != other.getAttributes().end()) {
+                if (pair.second == it->second) {
+                    similar_attrib++;
                 }
-            } 
-
-            if (static_cast<float>(similar_attrib)/total_attrib > .50) {
-                return true;
-            } else {
-                return false;
             }
         } 
-        else {
+
+        if (static_cast<float>(similar_attrib)/total_attrib > .50) {
+            return true;
+        } else {
             return false;
         }
     }
@@ -201,9 +195,12 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
     if (results.empty()) {
         std::cout << "Element does not exist in MPD2!" << std::endl;
         //add to diffset
-        std::stringstream idx_ss;
-        idx_ss << "[" << index_map[xpath] << "]";
-        xpath = xpath + idx_ss.str();
+        //Need to only add if an ID ss was not added
+        if (element.getAttributes().find("id") == element.getAttributes().end()) {
+            std::stringstream idx_ss;
+            idx_ss << "[" << index_map[xpath] << "]";
+            xpath = xpath + idx_ss.str();
+        }
         element.setXPath(xpath);
         diffset[xpath] = element;
     } else {
@@ -316,7 +313,6 @@ void morph_diffs(const char* client_mpd) {
     std::unordered_map<std::string, XMLElement> client_missing;
     process_node(current_root, client_doc, client_missing, client_imap);
 
-
     /*
         If we use a set instead of a map, the combination of S Path + attributes will make unique objects,
         however searching for keys in the map become dificulet when we only care abut xpath
@@ -324,7 +320,6 @@ void morph_diffs(const char* client_mpd) {
         Unoredered map should be of Xpath -> List<XMLElement> (list is ordered)
         if list is > 0 compare object indepenedently for add/remove/replace
     */
-
 
     std::cout << "\nElements present in Client MPD but missing in Current MPD: " << std::endl;
     print_diffset(current_missing);
@@ -334,17 +329,29 @@ void morph_diffs(const char* client_mpd) {
 
     /***************
     Compare Diff Sets
+
+    TODO - POSSIBLY Utilize XPATH OF Element to perform a lookup when adding/replacing grandparent elements (elements that contain multiple generations of child elements )
     ****************/
+
     std::map<XMLElement, std::string> delta_map;
     for (const auto& pair: current_missing) {
         auto it = client_missing.find(pair.first);
 
+        // If entry exist in client missing
         if (it != client_missing.end()) {
-            // Add element to update_map with 'REPLACE' operation
-            delta_map[it->second] = "REPLACE";
 
-            // Erase the entry from the client map
-            client_missing.erase(it->first);
+            if (it->second.similar(pair.second)) {
+                // Add element to update_map with 'REPLACE' operation
+                delta_map[it->second] = "REPLACE";
+
+                // Erase the entry from the client map
+                client_missing.erase(it->first);
+            } else {
+                // Remove + add directive
+                std::cout << "Key " << it->first << " found but element is not similar!" << std::endl;
+                delta_map[it->second] = "REM/ADD";
+                client_missing.erase(it->first);
+            }
             
         } else {
             std::cout << "Key " << pair.first << " does not exist in the map." << std::endl;
