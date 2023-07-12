@@ -136,6 +136,80 @@ struct simple_walker: pugi::xml_tree_walker
 };
 */
 
+/* Tranlate the delta map into XML Patch format */
+void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
+    pugi::xml_document diff_patch;
+
+    // Set the version and encoding attributes of the XML declaration
+    pugi::xml_node xml_declaration = diff_patch.append_child(pugi::node_declaration);
+    xml_declaration.append_attribute("version") = "1.0";
+    xml_declaration.append_attribute("encoding") = "UTF-8";
+
+
+    pugi::xml_node diff = diff_patch.append_child("diff");
+    for (auto& element: deltas) {
+        
+        if (element.second == "REM/ADD") {
+            //REMOVE + ADD LOGIC
+        } else if (element.second == "REMOVE") {
+            pugi::xml_node remove_directive = diff.append_child("remove");
+            //<remove sel="doc/foo[@a='1']" ws="after"/>
+            pugi::xml_attribute attr = remove_directive.append_attribute("sel");
+            attr.set_value(element.first.getXPath().substr(1).c_str());
+        } else if (element.second == "ADD") {
+            pugi::xml_node add_directive = diff.append_child("add");
+            pugi::xml_attribute attr = add_directive.append_attribute("sel");
+
+            auto pos = element.first.getXPath().find_last_of("/");
+            attr.set_value(element.first.getXPath().substr(1, pos - 1).c_str());
+
+            pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
+            for (auto& attrib: element.first.getAttributes()) {
+                pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                attribute.set_value(attrib.second.c_str());
+            }
+        } else if (element.second == "REPLACE") {
+            pugi::xml_node replace_directive = diff.append_child("replace");
+            // Special Logic for MPD Node, May need to be utilized for optimization (Replace single attribute instead of node)
+            if (element.first.getName() == "MPD") {
+                pugi::xml_attribute attribute = replace_directive.append_attribute("sel");
+                attribute.set_value("MPD/@publishTime");
+                pugi::xml_node textNode = replace_directive.append_child(pugi::node_pcdata);
+                textNode.text() = element.first.getAttributes().at("publishTime").c_str();
+            } else {
+                pugi::xml_attribute attribute = replace_directive.append_attribute("sel");
+                attribute.set_value(element.first.getXPath().substr(1).c_str());
+                pugi::xml_node child = replace_directive.append_child(element.first.getName().c_str());
+                for (auto& attrib: element.first.getAttributes()) {
+                    pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                    attribute.set_value(attrib.second.c_str());
+                }
+            }
+        } else {
+            //ERROR!
+            std::cout << "Unrecognized Directive: " << element.second << std::endl;
+        }
+
+    }
+
+
+    /*
+     // Add a child element with an attribute
+    pugi::xml_node child = root.append_child("child");
+    child.append_attribute("attribute") = "value";
+
+    */
+
+
+    // Save the XML document to a string
+    std::ostringstream oss;
+    // Use Tab indentation for readability
+    diff_patch.save(oss, "    ");
+    std::string xmlString = oss.str();
+    // Output the XML string
+    std::cout << xmlString << std::endl;
+}
+
 /**
  * - Recursive function for processing the XMLTree and identifiying nodes that do not exist in mpd2
  * - Nodes that cannot be identified in mpd2 are copied into an XMLElement object in the pass by reference diffset
@@ -399,7 +473,8 @@ void morph_diffs(const char* client_mpd) {
     /***************
     Create Diff File
     ****************/
-    //copy mpd1 to current
+    std::cout << "-------------------------------------------\n\n" << std::endl;
+    translate_deltas(delta_map);
 }
 
 int main (int argc, char *argv[]) {
