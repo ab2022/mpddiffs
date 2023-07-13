@@ -62,6 +62,11 @@ public:
         }
     }
 
+    std::set<std::string> attrib_diff(const XMLElement& other) const {
+        std::set<std::string> diff;
+        return diff;
+    }
+
     bool operator==(const XMLElement& other) const {
         // If name or number of attributes or children are not the same, 
         //if (name != other.name || attributes.size() != other.attributes.size() || children.size() != other.children.size()) 
@@ -169,6 +174,16 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
                 attribute.set_value(attrib.second.c_str());
             }
         } else if (element.second == "REPLACE") {
+            /*
+            TODO: NEED TO CHANGE THE LOGIC FOR REPLACE, when using the replace directive on an element, you need to provide child nodes if they exist
+            so behavior needs to be changed according to the following rules:
+                1. If the element has changed and no children are present, replace the element
+                    - For optimization: If sum(size_of(add_attribute_directives)) < size_of(add_element_directive), then use smaller option add_attribute, 
+                        else add_element
+                2. If just the element attributes values changed, and children are present, replace/add/remove ATTRIBUTES
+                (Optimization) - More efficient to replace all nested elements in a single element replacement directive, if there are also multiple changes occuring in 
+                    the child nodes (which may also be nested). i.e size of accumulative attribute replacements are larger than the nested element as a whole
+            */
             pugi::xml_node replace_directive = diff.append_child("replace");
             // Special Logic for MPD Node, May need to be utilized for optimization (Replace single attribute instead of node)
             if (element.first.getName() == "MPD") {
@@ -192,15 +207,6 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
 
     }
 
-
-    /*
-     // Add a child element with an attribute
-    pugi::xml_node child = root.append_child("child");
-    child.append_attribute("attribute") = "value";
-
-    */
-
-
     // Save the XML document to a string
     std::ostringstream oss;
     // Use Tab indentation for readability
@@ -213,8 +219,8 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
 /**
  * - Recursive function for processing the XMLTree and identifiying nodes that do not exist in mpd2
  * - Nodes that cannot be identified in mpd2 are copied into an XMLElement object in the pass by reference diffset
- * - The index_map is used to track index of identites that do not contain an "id" field
- * 
+ * - The index_map is used to track index of identites that do not contain an "id" field, this is later referenced 
+ * - in XPath queuries for elements that do not contain an "id" attribute
 */
 void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
     xpath = xpath + "/" + mpd1_node.name();
@@ -268,8 +274,8 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
     if (results.empty()) {
         std::cout << "Element does not exist in MPD2!" << std::endl;
-        //add to diffset
-        //Need to only add if an ID ss was not added
+
+        // Add [@id="<val>"] to XPath if the attribute is present for future XPath queries referencing this element
         if (element.getAttributes().find("id") == element.getAttributes().end()) {
             std::stringstream idx_ss;
             idx_ss << "[" << index_map[xpath] << "]";
@@ -286,15 +292,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         }
     }
     std::cout << "XPath: " << xpath << std::endl << std::endl;
-
-   /*
-   TODO: Track child node index when parsing through the document, and record in XMLElement object
-   Index will be used during comparison to inject/remove elements at certain indexes (i.e Segments <S\>).  Can possibly use logic like:
-   if node.attributes.empty() && !node.children.empty()
-        call process node with child index counter
-        add child index to XPath ie. '/MPD/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline/S[1]'
-    
-   */
     
     // Process child nodes recursivly
     for (pugi::xml_node mpd1_child : mpd1_node.children()) {
@@ -413,19 +410,26 @@ void morph_diffs(const char* client_mpd) {
 
         // If entry exist in client missing
         if (it != client_missing.end()) {
+            // Add element to update_map with 'REPLACE' operation
+            delta_map[it->second] = "REPLACE";
+            // Erase the entry from the client map
+            client_missing.erase(it->first);
 
+            /*
             if (it->second.similar(pair.second)) {
                 // Add element to update_map with 'REPLACE' operation
                 delta_map[it->second] = "REPLACE";
 
                 // Erase the entry from the client map
                 client_missing.erase(it->first);
-            } else {
+            } else { 
                 // Remove + add directive
+
                 std::cout << "Key " << it->first << " found but element is not similar!" << std::endl;
                 delta_map[it->second] = "REM/ADD";
                 client_missing.erase(it->first);
             }
+            */
             
         } else {
             std::cout << "Key " << pair.first << " does not exist in the map." << std::endl;
@@ -451,6 +455,7 @@ void morph_diffs(const char* client_mpd) {
 
     /**
      * Proposed Fix for indexing
+     * (IMPLEMENTED)
      * 1) Keep map of xpath with associated element index relative to the parent
      * Pros: Fast Map access
      * Cons: Memory Consumption (may be an issue with exxeccively large mpd)
@@ -465,7 +470,6 @@ void morph_diffs(const char* client_mpd) {
     /*
         TODO/BUG NOTES:
         - Use examples from rfc5261 / Find a testing framework
-        - Single Elements are detected for Add, Remove, Update
         - No Testing done for nested elements
     */
 
@@ -473,7 +477,7 @@ void morph_diffs(const char* client_mpd) {
     /***************
     Create Diff File
     ****************/
-    std::cout << "-------------------------------------------\n\n" << std::endl;
+    std::cout << "-------------------------------------------" << std::endl;
     translate_deltas(delta_map);
 }
 
