@@ -289,7 +289,13 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
 
     temp = &r->request_body->temp_file->file.name;
 
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "before morph_diffs");
+
     morph_diffs((const char*)temp->data);
+
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "after morph_diffs");
 
     if (ngx_file_info(path.data, &fi) == NGX_FILE_ERROR) {
         status = NGX_HTTP_CREATED;

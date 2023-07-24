@@ -8,7 +8,7 @@ make &&\
 sudo make install &&\
 
 # Move to modules directory
-sudo mv /usr/local/nginx/modules/ngx_http_diffstub_module.so /usr/share/nginx/modules/ngx_http_diffstub_module.so &&\
+sudo cp /usr/local/nginx/modules/ngx_http_diffstub_module.so /usr/share/nginx/modules/ngx_http_diffstub_module.so &&\
 
 sudo service nginx restart &&\
 echo "Successfully completed run_on_server"
