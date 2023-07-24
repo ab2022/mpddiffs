@@ -1,7 +1,7 @@
 ngx_addon_name=ngx_http_diffstub_module
 DIFFSTUB_SRCS="                                               \
               $ngx_addon_dir/ngx_http_diffstub_module.cpp     \
-              $ngx_addon_dir/main.cpp        \
+              $ngx_addon_dir/ngx_diffstub_internal.cpp        \
               "
 
 if test -n "$ngx_module_link"; then
