@@ -1,6 +1,4 @@
-#include <sys/stat.h>
-#include <iostream>
-#include <fstream>
+#include <string>
 #include "pugixml.hpp"
 #include "cxxopts.hpp"
 #include "ngx_diffstub_internal.hpp"

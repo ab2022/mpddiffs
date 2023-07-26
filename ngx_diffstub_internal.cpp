@@ -4,14 +4,11 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <regex>
-#include <chrono>
 #include <sys/stat.h>
 #include <fstream>
-#include <iterator>
 #include <set>
 #include <unordered_map>
-#include "cxxopts.hpp"
+#include <map>
 #include "pugixml.hpp"
 #include "ngx_diffstub_internal.hpp"
 
