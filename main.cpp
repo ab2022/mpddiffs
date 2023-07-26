@@ -3,14 +3,8 @@
 #include <fstream>
 #include "pugixml.hpp"
 #include "cxxopts.hpp"
+#include "ngx_diffstub_internal.hpp"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-void morph_diffs(const char* client_mpd);
 
 int main (int argc, char *argv[]) {
 
@@ -50,9 +44,5 @@ int main (int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 
