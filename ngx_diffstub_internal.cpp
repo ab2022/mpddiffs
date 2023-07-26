@@ -1,7 +1,6 @@
 /*
  * Copyright (C) ab
  */
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -14,10 +13,7 @@
 #include <unordered_map>
 #include "cxxopts.hpp"
 #include "pugixml.hpp"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "ngx_diffstub_internal.hpp"
 
 class XMLElement {
 private:
@@ -319,6 +315,9 @@ void print_diffset(std::unordered_map<std::string, XMLElement>& diffset) {
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void morph_diffs(const char* client_mpd) {
 
