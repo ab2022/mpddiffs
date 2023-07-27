@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void morph_diffs(const char* client_mpd);
+void morph_diffs(const char* old_mpd, const char* new_mpd);
 
 #ifdef __cplusplus
 }

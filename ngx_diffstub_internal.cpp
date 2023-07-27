@@ -20,6 +20,7 @@ private:
     //std::vector<XMLElement> children;
 public:
     size_t index;
+    bool has_children;
 
     const std::string& getXPath() const {
         return this->xpath;
@@ -154,9 +155,7 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
     pugi::xml_node diff = diff_patch.append_child("diff");
     for (auto& element: deltas) {
         
-        if (element.second == "REM/ADD") {
-            //REMOVE + ADD LOGIC
-        } else if (element.second == "REMOVE") {
+        if (element.second == "REMOVE") {
             pugi::xml_node remove_directive = diff.append_child("remove");
             //<remove sel="doc/foo[@a='1']" ws="after"/>
             pugi::xml_attribute attr = remove_directive.append_attribute("sel");
@@ -184,6 +183,7 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
                 (Optimization) - More efficient to replace all nested elements in a single element replacement directive, if there are also multiple changes occuring in 
                     the child nodes (which may also be nested). i.e size of accumulative attribute replacements are larger than the nested element as a whole
             */
+            
             pugi::xml_node replace_directive = diff.append_child("replace");
             // Special Logic for MPD Node, May need to be utilized for optimization (Replace single attribute instead of node)
             if (element.first.getName() == "MPD") {
@@ -199,6 +199,21 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
                     pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
                     attribute.set_value(attrib.second.c_str());
                 }
+            }
+            
+        } else if (element.second == "ADDATTR") {
+            std::cerr << "ADD ATTRIBUTE PLACEHOLDER" << std::endl;
+        } else if (element.second == "REMATTR") {
+            std::cerr << "REMOVE ATTRIBUTE PLACEHOLDER" << std::endl;
+        } else if (element.second == "REPATTR") {
+            for (auto& attribute : element.first.getAttributes()) {
+                pugi::xml_node replace_directive = diff.append_child("replace");
+                pugi::xml_attribute sel_attr = replace_directive.append_attribute("sel");
+                std::stringstream sel_path;
+                sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
+                sel_attr.set_value(sel_path.str().c_str());
+                pugi::xml_node textNode = replace_directive.append_child(pugi::node_pcdata);
+                textNode.text() = attribute.second.c_str();
             }
         } else {
             //ERROR!
@@ -227,6 +242,11 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
 void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
     xpath = xpath + "/" + mpd1_node.name();
     XMLElement element;
+    if (mpd1_node.children().empty()) {
+        element.has_children = false;
+    } else {
+        element.has_children = true;
+    }
     element.setName(mpd1_node.name());
     std::string full_query;
 
@@ -296,15 +316,19 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
     std::cerr << "XPath: " << xpath << std::endl << std::endl;
     
     // Process child nodes recursivly
+    // Here we could recursivly pass in the current element to add children to that element, could be useful for optimization (replace element + children in one directive)
+    // Is it too inneficient to calculate the resulting string of both operations (replace element attributes + replace children vs replace element + children) and choose the smaller one?
     for (pugi::xml_node mpd1_child : mpd1_node.children()) {
         process_node(mpd1_child, mpd2, diffset, index_map, xpath);
     }
+    
 }
 
 // Utility function for debugging
 void print_diffset(std::unordered_map<std::string, XMLElement>& diffset) {
     for (const auto& elem: diffset) {
         std::cerr << "XPath: " << elem.second.getXPath() << std::endl;
+        std::cerr << "Has Children: " << elem.second.has_children << std::endl;
         for (const auto& attrib: elem.second.getAttributes()) {
             std::cerr << "  " << attrib.first << ": " << attrib.second << std::endl;
         }
@@ -316,13 +340,15 @@ void print_diffset(std::unordered_map<std::string, XMLElement>& diffset) {
 extern "C" {
 #endif
 
-void morph_diffs(const char* client_mpd) {
-
-    const char* current_mpd = "current.mpd";
+// Call with 
+void morph_diffs(const char* old_mpd, const char* new_mpd) {
+    /*
     struct stat buffer;
+    */
 
     std::cerr << "\n\n" << "Starting Diff..." << "\n\n";
 
+    /*
     if (stat (current_mpd, &buffer) != 0)
     {
         //there is no current mpd, copy incoming to current and return
@@ -332,22 +358,23 @@ void morph_diffs(const char* client_mpd) {
         dst << src.rdbuf();
         return;
     }
+    */
 
     //TBD: check if mpd1 exists, is accessible
     pugi::xml_document client_doc;
-    client_doc.load_file((const char*)client_mpd);
+    client_doc.load_file((const char*) old_mpd);
 
     pugi::xml_document current_doc;
-    current_doc.load_file((const char*)current_mpd);
+    current_doc.load_file((const char*) new_mpd);
 
-    std::string client_ptime = client_doc.child("MPD").attribute("publishTime").value();
-    std::string current_ptime = current_doc.child("MPD").attribute("publishTime").value();
+    std::string old_ptime = client_doc.child("MPD").attribute("publishTime").value();
+    std::string new_ptime = current_doc.child("MPD").attribute("publishTime").value();
 
     // publishTime is the same in current and incoming, return
-    if (client_ptime == current_ptime)
+    if (old_ptime == new_ptime)
     {
-        std::cerr << "mpd1 ptime    " << client_ptime << std::endl;
-        std::cerr << "current ptime " << current_ptime << std::endl;
+        std::cerr << "mpd1 ptime    " << old_ptime << std::endl;
+        std::cerr << "current ptime " << new_ptime << std::endl;
         std::cerr << "they are the same, done" << std::endl;
         return;
     }
@@ -415,8 +442,68 @@ void morph_diffs(const char* client_mpd) {
 
         // If entry exist in client missing
         if (it != client_missing.end()) {
+            std::cout << "Has Children: " << it->second.has_children << std::endl;
             // Add element to update_map with 'REPLACE' operation
-            delta_map[it->second] = "REPLACE";
+            if(it->second.has_children) {
+                // Need to ADD/REM/REPLACE All Attributes for this element since it contains children
+                // CURRENTLY A BUG WHEN ADDED OR REMOVED ATTRIBUTE PRESENT, LOOK INTO
+                XMLElement add_attr;
+                for(const auto& attr: it->second.getAttributes()) {
+                    auto old_it = pair.second.getAttributes().find(attr.first);
+                    // If this attribute is not found at all
+                    if (old_it == pair.second.getAttributes().end()) {
+                        add_attr.addAttribute(attr.first, attr.second);
+                    }
+                }
+                if (!add_attr.getAttributes().empty()) {
+                    add_attr.setXPath(it->second.getXPath());
+                    add_attr.setName(it->second.getName());
+                    add_attr.index = it->second.index;
+                    add_attr.has_children = true;
+                    delta_map[add_attr] = "ADDATTR";
+                }
+                
+
+                XMLElement rem_attr;
+                for(const auto& attr: pair.second.getAttributes()) {
+                    auto new_it = it->second.getAttributes().find(attr.first);
+                    // If this attribute is not found at all
+                    if (new_it == it->second.getAttributes().end()) {
+                        rem_attr.addAttribute(attr.first, attr.second);
+                    }
+                }
+                if (!rem_attr.getAttributes().empty()) {
+                    rem_attr.setXPath(it->second.getXPath());
+                    rem_attr.setName(it->second.getName());
+                    rem_attr.index = it->second.index;
+                    rem_attr.has_children = true;
+                    delta_map[rem_attr] = "REMATTR";
+                }
+
+                XMLElement rep_attr;
+                for(const auto& attr: it->second.getAttributes()) {
+                    auto rep_it = pair.second.getAttributes().find(attr.first);
+                    // If this attribute is not found at all
+                    if (rep_it != pair.second.getAttributes().end()) {
+                        // Add to the element to replacement list if it is not equal
+                        if (rep_it->second != attr.second) {
+                            rep_attr.addAttribute(attr.first, attr.second);
+                        }
+                    }
+                }
+                if (!rep_attr.getAttributes().empty()) {
+                    rep_attr.setXPath(it->second.getXPath());
+                    rep_attr.setName(it->second.getName());
+                    rep_attr.index = it->second.index;
+                    rep_attr.has_children = true;
+                    delta_map[rep_attr] = "REPATTR";
+                }
+                
+                
+            } else {
+                delta_map[it->second] = "REPLACE";
+            }
+
             // Erase the entry from the client map
             client_missing.erase(it->first);
 
