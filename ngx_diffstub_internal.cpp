@@ -546,11 +546,13 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
         } else {
             std::cerr << "Key " << pair.first << " does not exist in the map." << std::endl;
             // Add element to update_map with 'REMOVE' operation
+            //TODO, need to perform search on doc to see if element does not exist at all or if an attibute was removed
             delta_map[pair.second] = "REMOVE";
         }
     }
     // What is left in the client_missing map should be 'ADDED'
     for (const auto& pair: client_missing) {
+        //TODO, need to perform search on doc to see if element does not exist at all or if an attibute was added
         delta_map[pair.second] = "ADD";
     }
 

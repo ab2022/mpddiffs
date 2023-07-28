@@ -5,7 +5,7 @@
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/diffstub",
-            "args": ["-u", "manifest_2.mpd"],
+            "args": ["-u", "mpd_samples/manifest_2.mpd"],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -13,7 +13,15 @@
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/diffstub",
-            "args": ["-u", "manifest_3.mpd"],
+            "args": ["-u", "mpd_samples/manifest_3.mpd"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "compare test_addattr",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/diffstub",
+            "args": ["-u", "mpd_samples/test_addattr.mpd"],
             "cwd": "${workspaceFolder}"
         }
     ],
