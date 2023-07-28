@@ -18,7 +18,7 @@
       </AdaptationSet>
       <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-         <SegmentTemplate initialization="audio-1-$Bandwidth$-init.mp4" media="audio-1-$Bandwidth$-$Time$.mp4a" startNumber="859547900" timescale="48000">
+         <SegmentTemplate initialization="audio-1-$Bandwidth$-init.mp4" media="audio-1-$Bandwidth$-$Time$.mp4a" startNumber="859547900" timescale="48000" remove="true">
             <SegmentTimeline>
                <S d="92260" r="17" t="140292864844"/>
             </SegmentTimeline>
