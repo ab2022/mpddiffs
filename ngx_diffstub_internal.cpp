@@ -154,17 +154,37 @@ struct simple_walker: pugi::xml_tree_walker
 };
 */
 
+
 /* Tranlate the delta map into XML Patch format */
-void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
+void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
     pugi::xml_document diff_patch;
 
     // Set the version and encoding attributes of the XML declaration
     pugi::xml_node xml_declaration = diff_patch.append_child(pugi::node_declaration);
     xml_declaration.append_attribute("version") = "1.0";
     xml_declaration.append_attribute("encoding") = "UTF-8";
+    xml_declaration.append_attribute("standalone") = "yes";
 
 
     pugi::xml_node patch = diff_patch.append_child("Patch");
+    // TODO: Replace with reading attributes from Patch Schema file, but we only want to do once, not for every call (pass in header obj?)
+    pugi::xml_attribute xmlns = patch.append_attribute("xmlns");
+    xmlns.set_value("urn:mpeg:dash:schema:mpd-patch:2020");
+    pugi::xml_attribute xmlns_xsi = patch.append_attribute("xmlns:xsi");
+    xmlns_xsi.set_value("http://www.w3.org/2001/XMLSchema-instance");
+    pugi::xml_attribute xsi_schema_loc = patch.append_attribute("xsi:schemaLocation");
+    xsi_schema_loc.set_value("urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd");
+
+    // Where to get this in real time?
+    pugi::xml_attribute mpd_id = patch.append_attribute("mpdId");
+    mpd_id.set_value("?");
+    pugi::xml_attribute orig_pub_time = patch.append_attribute("originalPublishTime");
+    orig_pub_time.set_value(old_pub_time.c_str());
+    pugi::xml_attribute pub_time = patch.append_attribute("publishTime");
+    pub_time.set_value(new_pub_time.c_str());
+
+    
+
     for (auto& element: deltas) {
         
         if (element.second == "REMOVE") {
@@ -179,8 +199,6 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
 
             std::stringstream query;
             query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
-            std::cout << "Sel Query: " << query.str() << std::endl;
-
             pugi::xpath_query diff_query(query.str().c_str());
             pugi::xpath_node_set results = diff_query.evaluate_node_set(diff_patch);
 
@@ -630,7 +648,7 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
     Create Diff File
     ****************/
     std::cerr << "-------------------------------------------" << std::endl;
-    translate_deltas(delta_map);
+    translate_deltas(delta_map, old_ptime, new_ptime);
 }
 
 #ifdef __cplusplus
