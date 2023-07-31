@@ -1,5 +1,6 @@
 {
     "configurations": [
+
         {
             "name": "compare mpd2",
             "type": "lldb",
@@ -22,6 +23,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/diffstub",
             "args": ["-u", "mpd_samples/test_addattr.mpd"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "compare test_remattr",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/diffstub",
+            "args": ["-u", "mpd_samples/test_remattr.mpd"],
             "cwd": "${workspaceFolder}"
         }
     ],
