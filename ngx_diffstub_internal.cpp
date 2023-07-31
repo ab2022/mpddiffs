@@ -174,16 +174,42 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas) {
             attr.set_value(element.first.getXPath().substr(1).c_str());
         } else if (element.second == "ADD") {
             // TODO Search document on this current xpath, to combine list items (i.e. segments) in one directive
-            pugi::xml_node add_directive = patch.append_child("add");
-            pugi::xml_attribute attr = add_directive.append_attribute("sel");
-
             auto pos = element.first.getXPath().find_last_of("/");
-            attr.set_value(element.first.getXPath().substr(1, pos - 1).c_str());
+            std::string sel_xpath = element.first.getXPath().substr(1, pos - 1);
 
-            pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
-            for (auto& attrib: element.first.getAttributes()) {
-                pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
-                attribute.set_value(attrib.second.c_str());
+            std::stringstream query;
+            query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
+            std::cout << "Sel Query: " << query.str() << std::endl;
+
+            pugi::xpath_query diff_query(query.str().c_str());
+            pugi::xpath_node_set results = diff_query.evaluate_node_set(diff_patch);
+
+            // IF we have not encountered this selector before, add a new element, otherwise edit the existing 'ADD' selector
+            if (results.empty()) {
+                pugi::xml_node add_directive = patch.append_child("add");
+                pugi::xml_attribute attr = add_directive.append_attribute("sel");
+
+                auto pos = element.first.getXPath().find_last_of("/");
+                attr.set_value(element.first.getXPath().substr(1, pos - 1).c_str());
+
+                pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
+                for (auto& attrib: element.first.getAttributes()) {
+                    pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                    attribute.set_value(attrib.second.c_str());
+                }
+            } else if (results.size() == 1) {
+                for (pugi::xpath_node node : results) {
+                    pugi::xml_node matched_node = node.node();
+
+                    pugi::xml_node child = matched_node.append_child(element.first.getName().c_str());
+                    for (auto& attrib: element.first.getAttributes()) {
+                        pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                        attribute.set_value(attrib.second.c_str());
+                    }
+                }
+            } else {
+                std::cerr << "ERROR: Result size in Diff Patch is > 1!" << std::endl;
+                exit(1);
             }
         } else if (element.second == "REPLACE") {
             /*
@@ -312,7 +338,7 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
     // Check if node exists in mpd2
     pugi::xpath_query element_query(full_query.c_str());
-    pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);  
+    pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);
 
     if (results.empty()) {
         std::cerr << "Element does not exist in MPD2!" << std::endl;
@@ -327,10 +353,38 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         diffset[xpath] = element;
     } else {
         if (results.size() > 1) {
-            std::cerr << "ERROR! Elements exists " << results.size() << " times in MPD2!";
+            std::cerr << "ERROR! Queried element " << full_query << " exists " << results.size() << " times in MPD2!" << std::endl;
             exit(1);
         } else {
-            std::cerr << "Element exists in MPD2." << std::endl;
+            // Further Inspect the matching element for matching attribute values
+            // This is required in the case where all attributes are equal in value, but one may have been added/removed from the set
+            for (pugi::xpath_node node : results) {
+                pugi::xml_node matched_node = node.node();
+
+                size_t current_attr_size = std::distance(mpd1_node.attributes_begin(), mpd1_node.attributes_end());
+                size_t matched_attr_size = std::distance(matched_node.attributes_begin(), matched_node.attributes_end());
+                if (current_attr_size == matched_attr_size) {
+                    std::cerr << "Element " << full_query << " exists in MPD2." << std::endl;
+                } else {
+                    if (element.getAttributes().find("id") == element.getAttributes().end()) {
+                        std::stringstream idx_ss;
+                        idx_ss << "[" << index_map[xpath] << "]";
+                        xpath = xpath + idx_ss.str();
+                    }
+                    element.setXPath(xpath);
+                    diffset[xpath] = element;
+                }
+
+                /*
+                for (pugi::xml_attribute attr : matched_node.attributes()) {
+                    const char* attr_name = attr.name();
+                    const char* attr_value = attr.value();
+                    std::cout << "Attribute name: " << attr_name << ", Attribute value: " << attr_value << std::endl;
+                }
+                */
+            }
+
+            
         }
     }
     std::cerr << "XPath: " << xpath << std::endl << std::endl;
@@ -526,22 +580,6 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
 
             // Erase the entry from the client map
             client_missing.erase(it->first);
-
-            /*
-            if (it->second.similar(pair.second)) {
-                // Add element to update_map with 'REPLACE' operation
-                delta_map[it->second] = "REPLACE";
-
-                // Erase the entry from the client map
-                client_missing.erase(it->first);
-            } else { 
-                // Remove + add directive
-
-                std::cerr << "Key " << it->first << " found but element is not similar!" << std::endl;
-                delta_map[it->second] = "REM/ADD";
-                client_missing.erase(it->first);
-            }
-            */
             
         } else {
             std::cerr << "Key " << pair.first << " does not exist in the map." << std::endl;
