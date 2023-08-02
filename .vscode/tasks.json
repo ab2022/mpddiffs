@@ -10,6 +10,7 @@
                 "-Wall",
                 "-g",
                 "${file}",
+                "diffstub_xml_node.cpp",
                 "ngx_diffstub_internal.cpp",
                 "-o",
                 "${fileDirname}/diffstub"
