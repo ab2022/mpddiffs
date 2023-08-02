@@ -12,6 +12,7 @@
 #include "pugixml.hpp"
 #include "ngx_diffstub_internal.hpp"
 
+
 class XMLElement {
 private:
     std::string xpath;
@@ -193,14 +194,14 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
             pugi::xml_attribute attr = remove_directive.append_attribute("sel");
             attr.set_value(element.first.getXPath().substr(1).c_str());
         } else if (element.second == "ADD") {
-            // TODO Search document on this current xpath, to combine list items (i.e. segments) in one directive
+            // Search document on this current xpath, to combine list items (i.e. segments) in one directive
             auto pos = element.first.getXPath().find_last_of("/");
             std::string sel_xpath = element.first.getXPath().substr(1, pos - 1);
 
             std::stringstream query;
             query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
             pugi::xpath_query diff_query(query.str().c_str());
-            pugi::xpath_node_set results = diff_query.evaluate_node_set(diff_patch);
+            pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
             // IF we have not encountered this selector before, add a new element, otherwise edit the existing 'ADD' selector
             if (results.empty()) {
@@ -216,14 +217,12 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
                     attribute.set_value(attrib.second.c_str());
                 }
             } else if (results.size() == 1) {
-                for (pugi::xpath_node node : results) {
-                    pugi::xml_node matched_node = node.node();
+                pugi::xml_node matched_node = results.first().node();
 
-                    pugi::xml_node child = matched_node.append_child(element.first.getName().c_str());
-                    for (auto& attrib: element.first.getAttributes()) {
-                        pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
-                        attribute.set_value(attrib.second.c_str());
-                    }
+                pugi::xml_node child = matched_node.append_child(element.first.getName().c_str());
+                for (auto& attrib: element.first.getAttributes()) {
+                    pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                    attribute.set_value(attrib.second.c_str());
                 }
             } else {
                 std::cerr << "ERROR: Result size in Diff Patch is > 1!" << std::endl;
@@ -276,8 +275,8 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
                 std::stringstream sel_path;
                 sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
                 sel_attr.set_value(sel_path.str().c_str());
-                pugi::xml_node textNode = replace_directive.append_child(pugi::node_pcdata);
-                textNode.text() = attribute.second.c_str();
+                pugi::xml_node text_node = replace_directive.append_child(pugi::node_pcdata);
+                text_node.text() = attribute.second.c_str();
             }
         } else {
             //ERROR!
@@ -297,6 +296,19 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
     std::cerr << xmlString << std::endl;
 }
 
+std::string NodeTypeToString(pugi::xml_node_type type) {
+    switch (type) {
+        case pugi::node_element:    return "Element";
+        case pugi::node_pcdata:     return "Text";
+        case pugi::node_cdata:      return "CDATA";
+        case pugi::node_comment:    return "Comment";
+        case pugi::node_pi:         return "Processing Instruction";
+        case pugi::node_declaration: return "Declaration";
+        case pugi::node_doctype:    return "Document Type";
+        default:                    return "Unknown";
+    }
+}
+
 /**
  * - Recursive function for processing the XMLTree and identifiying nodes that do not exist in mpd2
  * - Nodes that cannot be identified in mpd2 are copied into an XMLElement object in the pass by reference diffset
@@ -304,80 +316,84 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
  * - in XPath queuries for elements that do not contain an "id" attribute
 */
 void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
-    xpath = xpath + "/" + mpd1_node.name();
-    XMLElement element;
-    if (mpd1_node.children().empty()) {
-        element.has_children = false;
-    } else {
-        element.has_children = true;
-    }
-    element.setName(mpd1_node.name());
-    std::string full_query;
-
-    // If the element contains attributes
-    if (!mpd1_node.attributes().empty()) {
-        std::stringstream elem_attr_filter_ss;
-        std::stringstream id_info_ss;
-
-        // Create a filter stream that populates based on attribute values,
-        // Used for searching for identical node in other XML document
-        elem_attr_filter_ss << "[";
-        for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
-
-            if (it->name() == (std::string)"id") {
-                id_info_ss << "[@" << it->name() << "='" << it->value() << "']";
-            }
-            element.addAttribute(it->name(), it->value());
-
-            elem_attr_filter_ss << "@" << it->name() << "=" << "'" << it->value() << "'";
-            if (std::next(it) != mpd1_node.attributes().end()) {
-                elem_attr_filter_ss << " and ";
-            }
+    if (mpd1_node.type() == pugi::node_element) {
+        xpath = xpath + "/" + mpd1_node.name();
+        XMLElement element;
+        if (mpd1_node.children().empty()) {
+            element.has_children = false;
+        } else {
+            element.has_children = true;
         }
-        elem_attr_filter_ss << "]";
+        element.setName(mpd1_node.name());
+        std::string full_query;
 
-        full_query = xpath + elem_attr_filter_ss.str();
-        
+        // If the element contains attributes
+        if (!mpd1_node.attributes().empty()) {
+            std::stringstream elem_attr_filter_ss;
+            std::stringstream id_info_ss;
 
-        if (!id_info_ss.str().empty()) {
-            xpath = xpath + id_info_ss.str();
+            // Create a filter stream that populates based on attribute values,
+            // Used for searching for identical node in other XML document
+            elem_attr_filter_ss << "[";
+            for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
+
+                if (it->name() == (std::string)"id") {
+                    id_info_ss << "[@" << it->name() << "='" << it->value() << "']";
+                }
+                element.addAttribute(it->name(), it->value());
+
+                elem_attr_filter_ss << "@" << it->name() << "=" << "'" << it->value() << "'";
+                if (std::next(it) != mpd1_node.attributes().end()) {
+                    elem_attr_filter_ss << " and ";
+                }
+            }
+            elem_attr_filter_ss << "]";
+
+            full_query = xpath + elem_attr_filter_ss.str();
+            
+
+            if (!id_info_ss.str().empty()) {
+                xpath = xpath + id_info_ss.str();
+            } else {
+                index_map[xpath]++;
+                element.index = index_map[xpath];
+            }
+
         } else {
             index_map[xpath]++;
             element.index = index_map[xpath];
+            full_query = xpath;
         }
 
-    } else {
-        index_map[xpath]++;
-        element.index = index_map[xpath];
-        full_query = xpath;
-    }
+        std::cerr << "MPD2 Query: " << full_query << std::endl;
 
-    std::cerr << "MPD2 Query: " << full_query << std::endl;
+        // Check if node exists in mpd2
+        // TODO:  This is currently throwing an error for Text Nodes (i.e. Patch Location))
+        // Need to write logic that addreses this (check if a child is a text note before proceeding?)
+        // i.e. If node has only 1 child and is of type PCDATA...
 
-    // Check if node exists in mpd2
-    pugi::xpath_query element_query(full_query.c_str());
-    pugi::xpath_node_set results = element_query.evaluate_node_set(mpd2);
+        pugi::xpath_query element_query(full_query.c_str());
+        pugi::xpath_node_set results = mpd2.select_nodes(element_query);
 
-    if (results.empty()) {
-        std::cerr << "Element does not exist in MPD2!" << std::endl;
+        if (results.empty()) {
+            std::cerr << "Element does not exist in MPD2!" << std::endl;
 
-        // Add [@id="<val>"] to XPath if the attribute is present for future XPath queries referencing this element
-        if (element.getAttributes().find("id") == element.getAttributes().end()) {
-            std::stringstream idx_ss;
-            idx_ss << "[" << index_map[xpath] << "]";
-            xpath = xpath + idx_ss.str();
-        }
-        element.setXPath(xpath);
-        diffset[xpath] = element;
-    } else {
-        if (results.size() > 1) {
-            std::cerr << "ERROR! Queried element " << full_query << " exists " << results.size() << " times in MPD2!" << std::endl;
-            exit(1);
+            // Add [@id="<val>"] to XPath if the attribute is present for future XPath queries referencing this element
+            if (element.getAttributes().find("id") == element.getAttributes().end()) {
+                std::stringstream idx_ss;
+                idx_ss << "[" << index_map[xpath] << "]";
+                xpath = xpath + idx_ss.str();
+            }
+            element.setXPath(xpath);
+            diffset[xpath] = element;
         } else {
-            // Further Inspect the matching element for matching attribute values
-            // This is required in the case where all attributes are equal in value, but one may have been added/removed from the set
-            for (pugi::xpath_node node : results) {
-                pugi::xml_node matched_node = node.node();
+            if (results.size() > 1) {
+                std::cerr << "ERROR! Queried element " << full_query << " exists " << results.size() << " times in MPD2!" << std::endl;
+                exit(1);
+            } else {
+                // Further Inspect the matching element for matching attribute values
+                // This is required in the case where all attributes are equal in value, but one may have been added/removed from the set
+                pugi::xml_node matched_node = results.first().node();
 
                 size_t current_attr_size = std::distance(mpd1_node.attributes_begin(), mpd1_node.attributes_end());
                 size_t matched_attr_size = std::distance(matched_node.attributes_begin(), matched_node.attributes_end());
@@ -400,18 +416,44 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                     std::cout << "Attribute name: " << attr_name << ", Attribute value: " << attr_value << std::endl;
                 }
                 */
+
+                
+            }
+        }
+        std::cerr << "XPath: " << xpath << std::endl << std::endl;
+        
+        // Process child nodes recursivly
+        // Here we could recursivly pass in the current element to add children to that element, could be useful for optimization (replace element + children in one directive)
+        // Is it too inneficient to calculate the resulting string of both operations (replace element attributes + replace children vs replace element + children) and choose the smaller one?
+        for (pugi::xml_node mpd1_child : mpd1_node.children()) {
+            process_node(mpd1_child, mpd2, diffset, index_map, xpath);
+        }
+    } else if (mpd1_node.type() == pugi::node_pcdata) {
+        //If node is a text node, we must process it differently
+        xpath = xpath + "/text()";
+        std::cerr << "Text Node Path: " << xpath << std::endl;
+
+        pugi::xpath_query test_query(xpath.c_str());
+        pugi::xpath_node_set results = mpd2.select_nodes(test_query);
+
+        if (!results.empty()) {
+                std::string mpd1_text_content = mpd1_node.value();
+                std::string mpd2_text_content = results.first().node().value();
+                std::cout << "Text content of the " << xpath << " element in MPD1: " << mpd1_text_content << std::endl;
+                std::cout << "Text content of the " << xpath << " element in MPD2: " << mpd2_text_content << std::endl;
+                if (mpd1_text_content == mpd2_text_content) {
+                    std::cerr << "Element " << xpath << " matches in MPD2." << std::endl;
+                } else {
+                    //TODO Elements differ, add to diffset
+                }
+                
+            } else {
+                std::cout << "XPath query result is empty." << std::endl;
             }
 
-            
-        }
-    }
-    std::cerr << "XPath: " << xpath << std::endl << std::endl;
-    
-    // Process child nodes recursivly
-    // Here we could recursivly pass in the current element to add children to that element, could be useful for optimization (replace element + children in one directive)
-    // Is it too inneficient to calculate the resulting string of both operations (replace element attributes + replace children vs replace element + children) and choose the smaller one?
-    for (pugi::xml_node mpd1_child : mpd1_node.children()) {
-        process_node(mpd1_child, mpd2, diffset, index_map, xpath);
+    } else {
+        std::cerr << "ERROR: Unhandled Node Type: " << NodeTypeToString(mpd1_node.type()) << std::endl;
+        exit(1);
     }
     
 }
@@ -434,23 +476,7 @@ extern "C" {
 
 // Call with 
 void morph_diffs(const char* old_mpd, const char* new_mpd) {
-    /*
-    struct stat buffer;
-    */
-
     std::cerr << "\n\n" << "Starting Diff..." << "\n\n";
-
-    /*
-    if (stat (current_mpd, &buffer) != 0)
-    {
-        //there is no current mpd, copy incoming to current and return
-        std::cerr << "creating current.mpd because it doesn't exist" << std::endl;
-        std::ifstream src(client_mpd);
-        std::ofstream dst(current_mpd);
-        dst << src.rdbuf();
-        return;
-    }
-    */
 
     //TBD: check if mpd1 exists, is accessible
     pugi::xml_document client_doc;
@@ -602,13 +628,11 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
         } else {
             std::cerr << "Key " << pair.first << " does not exist in the map." << std::endl;
             // Add element to update_map with 'REMOVE' operation
-            //TODO, need to perform search on doc to see if element does not exist at all or if an attibute was removed
             delta_map[pair.second] = "REMOVE";
         }
     }
     // What is left in the client_missing map should be 'ADDED'
     for (const auto& pair: client_missing) {
-        //TODO, need to perform search on doc to see if element does not exist at all or if an attibute was added
         delta_map[pair.second] = "ADD";
     }
 

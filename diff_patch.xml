@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Patch xmlns="urn:mpeg:dash:schema:mpd-patch:2020" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd" mpdId="?" originalPublishTime="2022-05-22T17:22:06Z" publishTime="2022-05-22T17:22:10Z">
 	<replace sel="MPD[1]/@publishTime">2022-05-22T17:22:10Z</replace>
-	<remove sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='0']/Representation[@id='Video1_6']" />
-	<remove sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline/S[1]" />
-	<add sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline">
-		<S t="146139035" r="16" d="96" />
-		<S t="146140222" r="17" d="96" />
-	</add>
-	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']/SegmentTemplate[1]/@startNumber">859540274</replace>
-	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']/SegmentTemplate[1]/@initialization">audio-0-$Bandwidth$-init.mp4</replace>
-	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']/SegmentTemplate[1]/@media">audio-0-$Bandwidth$-$Time$.mp4a</replace>
-	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']/SegmentTemplate[1]/SegmentTimeline/S[1]">
+	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline/S[1]">
+		<S t="146137824" r="12" d="91" />
+	</replace>
+	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='0']/SegmentTemplate/SegmentTimeline/S[2]">
+		<S t="148999021" r="14" d="93" />
+	</replace>
+	<replace sel="MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']/SegmentTemplate/SegmentTimeline/S[1]">
 		<S t="140292311872" r="15" d="92160" />
 	</replace>
 </Patch>

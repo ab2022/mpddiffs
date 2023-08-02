@@ -36,7 +36,8 @@ int main (int argc, char *argv[]) {
     if (inmpd_o.length())
     {
         const char* inmpd = inmpd_o.c_str();
-        morph_diffs(inmpd, "mpd_samples/current.mpd");
+        //morph_diffs(inmpd, "mpd_samples/current.mpd");
+        morph_diffs("mpd_samples/manifest_2_pl.mpd", "mpd_samples/manifest_1_pl.mpd");
     }
 
     return EXIT_SUCCESS;
