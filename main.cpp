@@ -37,13 +37,19 @@ int main (int argc, char *argv[]) {
     {
         const char* inmpd = inmpd_o.c_str();
         const char* mpd_patch = morph_diffs(inmpd, "mpd_samples/current.mpd");
-        std::cerr << "MPD PATCH: \n" << mpd_patch << std::endl;
+        std::cerr << "MPD Patch: \n" << mpd_patch << "\n\n";
         //morph_diffs("mpd_samples/manifest_2_pl.mpd", "mpd_samples/manifest_1_pl.mpd");
 
         // save the patch, other implentation operations, etc..
 
         // When done using the mpd_patch, free the memory associated with it
         free((void*) mpd_patch);
+
+        /* Sample of Adding the patch location to an mpd file
+        const char* modified_mpd = add_patch_location(inmpd, "live-stream/patch.mpd?publishTime=2022-05-22T17:24:00Z", "60");
+        std::cerr << "Modified MPD w/ PatchLocation: \n" << modified_mpd << std::endl;
+        free((void*) modified_mpd);
+        */
     }
 
     return EXIT_SUCCESS;
