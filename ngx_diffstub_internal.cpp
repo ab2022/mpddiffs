@@ -56,7 +56,7 @@ struct simple_walker: pugi::xml_tree_walker
 
 
 /* Tranlate the delta map into XML Patch format */
-const char* translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
+std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
     pugi::xml_document diff_patch;
 
     // Set the version and encoding attributes of the XML declaration
@@ -184,18 +184,12 @@ const char* translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
     }
 
-    // Save the XML document to a c string
+    // Save the XML document to a string
     std::ostringstream oss;
     diff_patch.save(oss, "\t");
-    std::string doc_str = oss.str();
+    std::string diff_patch_str = oss.str();
 
-    // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
-    // function return and we are left with a dangling pointer.  Need to make sure to free memory in NGINX module (or main for testing)!
-    char* doc_c_str = (char*) malloc(doc_str.size() + 1);
-    std::strcpy(doc_c_str, doc_str.c_str());
-
-    // Return the C-style string
-    return doc_c_str;
+    return diff_patch_str;
 }
 
 std::string NodeTypeToString(pugi::xml_node_type type) {
@@ -376,7 +370,7 @@ void print_diffset(std::unordered_map<std::string, XMLElement>& diffset) {
 extern "C" {
 #endif
 
-// Call with 
+
 const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     std::cerr << "\n\n" << "Starting Diff..." << "\n\n";
 
@@ -574,13 +568,43 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     Create Diff File And Return
     ****************/
     std::cerr << "-------------------------------------------" << std::endl;
-    const char* diff_patch = translate_deltas(delta_map, old_ptime, new_ptime);
-    return diff_patch;
+    std::string diff_patch_str = translate_deltas(delta_map, old_ptime, new_ptime);
+
+    // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
+    // function return and we are left with a dangling pointer.  Need to make sure to free memory in NGINX module (or main for testing)!
+    char* diff_patch_c_str = (char*) malloc(diff_patch_str.size() + 1);
+    std::strcpy(diff_patch_c_str, diff_patch_str.c_str());
+
+    // Return the C-style string
+    return diff_patch_c_str;
 }
 
 // Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
 const char* add_patch_location(const char* mpd, const char* patch_location, const char* ttl) {
-    exit(1);
+    // Load File
+    pugi::xml_document mpd_xml;
+    mpd_xml.load_file((const char*) mpd);
+
+    // Add Patch Location Element as the first child
+    pugi::xml_node mpd_elem = mpd_xml.child("MPD");
+    pugi::xml_node pl_elem = mpd_elem.insert_child_before("PatchLocation", mpd_elem.first_child());
+    pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
+    ttl_attr.set_value(ttl);
+    pugi::xml_node pl_text_field = pl_elem.append_child(pugi::node_pcdata);
+    pl_text_field.text() = patch_location;
+
+    // Save the XML document to a string
+    std::ostringstream oss;
+    mpd_xml.save(oss, "\t");
+    std::string xml_str = oss.str();
+
+    // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
+    // function return and we are left with a dangling pointer.  Need to make sure to free memory in NGINX module (or main for testing)!
+    char* xml_c_str = (char*) malloc(xml_str.size() + 1);
+    std::strcpy(xml_c_str, xml_str.c_str());
+
+    // Return the C-style string
+    return xml_c_str;
 }
 
 #ifdef __cplusplus
