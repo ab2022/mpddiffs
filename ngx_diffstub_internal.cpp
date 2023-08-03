@@ -56,7 +56,7 @@ struct simple_walker: pugi::xml_tree_walker
 
 
 /* Tranlate the delta map into XML Patch format */
-void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
+const char* translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
     pugi::xml_document diff_patch;
 
     // Set the version and encoding attributes of the XML declaration
@@ -184,15 +184,18 @@ void translate_deltas(const std::map<XMLElement, std::string>& deltas, std::stri
 
     }
 
-    // Save the XML document to a string
+    // Save the XML document to a c string
     std::ostringstream oss;
-    // Use Tab indentation for readability
-    diff_patch.save(oss, "    ");
-    // save diff_patch to file
-    diff_patch.save_file("diff_patch.xml");
-    std::string xmlString = oss.str();
-    // Output the XML string
-    std::cerr << xmlString << std::endl;
+    diff_patch.save(oss, "\t");
+    std::string doc_str = oss.str();
+
+    // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
+    // function return and we are left with a dangling pointer.  Need to make sure to free memory in NGINX module (or main for testing)!
+    char* doc_c_str = (char*) malloc(doc_str.size() + 1);
+    std::strcpy(doc_c_str, doc_str.c_str());
+
+    // Return the C-style string
+    return doc_c_str;
 }
 
 std::string NodeTypeToString(pugi::xml_node_type type) {
@@ -374,7 +377,7 @@ extern "C" {
 #endif
 
 // Call with 
-void morph_diffs(const char* old_mpd, const char* new_mpd) {
+const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     std::cerr << "\n\n" << "Starting Diff..." << "\n\n";
 
     //TBD: check if mpd1 exists, is accessible
@@ -393,7 +396,7 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
         std::cerr << "mpd1 ptime    " << old_ptime << std::endl;
         std::cerr << "current ptime " << new_ptime << std::endl;
         std::cerr << "they are the same, done" << std::endl;
-        return;
+        return "";
     }
 
     /*
@@ -568,10 +571,16 @@ void morph_diffs(const char* old_mpd, const char* new_mpd) {
 
 
     /***************
-    Create Diff File
+    Create Diff File And Return
     ****************/
     std::cerr << "-------------------------------------------" << std::endl;
-    translate_deltas(delta_map, old_ptime, new_ptime);
+    const char* diff_patch = translate_deltas(delta_map, old_ptime, new_ptime);
+    return diff_patch;
+}
+
+// Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
+const char* add_patch_location(const char* mpd, const char* patch_location, const char* ttl) {
+    exit(1);
 }
 
 #ifdef __cplusplus
