@@ -11,16 +11,23 @@ private:
     std::string xpath;
     std::string name;
     std::unordered_map<std::string, std::string> attributes;
+    std::string value;
     //std::vector<XMLElement> children;
 public:
     size_t index;
+    std::string type;
+
     bool has_children;
+
+    const std::string& getValue() const;
 
     const std::string& getXPath() const;
 
     const std::string& getName() const;
 
     const std::unordered_map<std::string, std::string>& getAttributes() const;
+
+    void setValue(std::string value);
 
     void setXPath(std::string xpath);
 
