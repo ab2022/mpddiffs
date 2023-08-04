@@ -1,5 +1,8 @@
 #include "diffstub_xml_node.hpp"
 
+const std::string& XMLElement::getValue() const {
+    return this->value;
+}
 
 const std::string& XMLElement::getXPath() const {
     return this->xpath;
@@ -11,6 +14,10 @@ const std::string& XMLElement::getName() const {
 
 const std::unordered_map<std::string, std::string>& XMLElement::getAttributes() const {
     return this->attributes;
+}
+
+void XMLElement::setValue(std::string value) {
+    this->value = value;
 }
 
 void XMLElement::setXPath(std::string xpath) {
