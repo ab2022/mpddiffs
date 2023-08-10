@@ -285,7 +285,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
     const char *patchFilePath = "/dev/shm/dash/Service2/live-stream/patch.mpd";
     const char *patchLocationPath = "/dash/Service2/live-stream/patch.mpd";
 
-    const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, patchLocationPath, "120");
+    const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, patchLocationPath, "12000");
     // save right back to (const char*)temp->data
     FILE *file = fopen((const char*)temp->data, "w");
     

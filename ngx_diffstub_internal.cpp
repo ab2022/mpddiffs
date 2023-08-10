@@ -645,8 +645,8 @@ const char* add_patch_location(const char* mpd, const char* patch_location, cons
     // Add Patch Location Element as the first child
     pugi::xml_node mpd_elem = mpd_xml.child("MPD");
     pugi::xml_node pl_elem = mpd_elem.insert_child_before("PatchLocation", mpd_elem.first_child());
-    // pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
-    // ttl_attr.set_value(ttl);
+    pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
+    ttl_attr.set_value(ttl);
     pugi::xml_node pl_text_field = pl_elem.append_child(pugi::node_pcdata);
     
     // append current mpd's publishTime to patch_location
