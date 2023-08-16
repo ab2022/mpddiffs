@@ -472,6 +472,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     Create Diff Sets
     ****************/
     pugi::xml_node client_root = client_doc.child("MPD");
+    
     // contains elements missing in current MPD
     std::unordered_map<std::string, u_int> current_imap;
     std::unordered_map<std::string, XMLElement> current_missing;
@@ -634,6 +635,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
 }
 
 // Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
+// this handles appending "?publishTime" and the current manifest's publishTime to the patch_location
 const char* add_patch_location(const char* mpd, const char* patch_location, const char* ttl) {
     // Load File
     pugi::xml_document mpd_xml;
@@ -645,7 +647,12 @@ const char* add_patch_location(const char* mpd, const char* patch_location, cons
     pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
     ttl_attr.set_value(ttl);
     pugi::xml_node pl_text_field = pl_elem.append_child(pugi::node_pcdata);
-    pl_text_field.text() = patch_location;
+    
+    // append current mpd's publishTime to patch_location
+    std::string publish_time = mpd_elem.attribute("publishTime").value();
+    std::string patch_location_str = patch_location;
+    patch_location_str.append("?publishTime=").append(publish_time);
+    pl_text_field.set_value(patch_location_str.c_str());
 
     // Save the XML document to a string
     std::ostringstream oss;
