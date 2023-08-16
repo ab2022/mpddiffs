@@ -398,7 +398,7 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             }
                 
         } else {
-            std::cout << "XPath query result is empty." << std::endl;
+            std::cerr << "XPath query result is empty." << std::endl;
         }
 
     } else {
@@ -636,13 +636,16 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
 
 // Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
 // this handles appending "?publishTime" and the current manifest's publishTime to the patch_location
-const char* add_patch_location(const char* mpd, const char* patch_location, const char* ttl) {
+const char* add_patch_location(const char* mpd, const char* mpd_id, const char* patch_location, const char* ttl) {
     // Load File
     pugi::xml_document mpd_xml;
     mpd_xml.load_file((const char*) mpd);
 
     // Add Patch Location Element as the first child
     pugi::xml_node mpd_elem = mpd_xml.child("MPD");
+    pugi::xml_attribute mpd_id_attr = mpd_elem.append_attribute("id");
+    mpd_id_attr.set_value(mpd_id);
+
     pugi::xml_node pl_elem = mpd_elem.insert_child_before("PatchLocation", mpd_elem.first_child());
     pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
     ttl_attr.set_value(ttl);

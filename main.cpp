@@ -46,10 +46,12 @@ int main (int argc, char *argv[]) {
         free((void*) mpd_patch);
 
         /* Sample of Adding the patch location to an mpd file
-        const char* modified_mpd = add_patch_location(inmpd, "live-stream/patch.mpd?publishTime=2022-05-22T17:24:00Z", "60");
+        const char* mpd_id = "1";
+        const char* modified_mpd = add_patch_location(inmpd, mpd_id, "live-stream/patch.mpd?publishTime=2022-05-22T17:24:00Z", "60");
         std::cerr << "Modified MPD w/ PatchLocation: \n" << modified_mpd << std::endl;
         free((void*) modified_mpd);
         */
+        
     }
 
     return EXIT_SUCCESS;
