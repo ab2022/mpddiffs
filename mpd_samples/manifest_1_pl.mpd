@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD availabilityStartTime="2022-04-18T21:28:44Z" maxSegmentDuration="PT1.92S" minBufferTime="PT1S" minimumUpdatePeriod="PT7S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2022-05-22T17:22:10Z" timeShiftBufferDepth="PT1M1S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
-   <PatchLocation ttl="60">live-stream/patch.mpd?publishTime=2022-05-22T17:26:00Z</PatchLocation>
+   <PatchLocation ttl="62">live-stream/patch.mpd?publishTime=2022-05-22T17:26:00Z</PatchLocation>
    <Period id="P0" start="PT0S">
       <AdaptationSet contentType="video" id="0" maxFrameRate="50" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="25" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>

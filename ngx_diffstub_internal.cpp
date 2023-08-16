@@ -337,15 +337,17 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
                 size_t current_attr_size = std::distance(mpd1_node.attributes_begin(), mpd1_node.attributes_end());
                 size_t matched_attr_size = std::distance(matched_node.attributes_begin(), matched_node.attributes_end());
+
+                if (element.getAttributes().find("id") == element.getAttributes().end()) {
+                    std::stringstream idx_ss;
+                    idx_ss << "[" << index_map[xpath] << "]";
+                    xpath = xpath + idx_ss.str();
+                    element.setXPath(xpath);
+                }
+                    
                 if (current_attr_size == matched_attr_size) {
                     std::cerr << "Element " << full_query << " exists in MPD2." << std::endl;
                 } else {
-                    if (element.getAttributes().find("id") == element.getAttributes().end()) {
-                        std::stringstream idx_ss;
-                        idx_ss << "[" << index_map[xpath] << "]";
-                        xpath = xpath + idx_ss.str();
-                    }
-                    element.setXPath(xpath);
                     diffset[xpath] = element;
                 }
 
@@ -370,9 +372,7 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         }
     } else if (mpd1_node.type() == pugi::node_pcdata) {
         //If node is a text node, we must process it differently
-        std::stringstream idx_ss;
-        idx_ss << "[" << index_map[xpath] << "]";
-        xpath = xpath + idx_ss.str() + "/text()";
+        xpath = xpath + "/text()";
         std::cerr << "Text Node Path: " << xpath << std::endl;
 
         pugi::xpath_query test_query(xpath.c_str());
@@ -512,7 +512,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
             // Add element to update_map with 'REPLACE' operation
             if(it->second.has_children) {
                 // Need to ADD/REM/REPLACE All Attributes for this element since it contains children
-                // CURRENTLY A BUG WHEN ADDED OR REMOVED ATTRIBUTE PRESENT, LOOK INTO
                 XMLElement add_attr;
                 for(const auto& attr: it->second.getAttributes()) {
                     auto old_it = pair.second.getAttributes().find(attr.first);
