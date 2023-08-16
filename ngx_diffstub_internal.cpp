@@ -165,8 +165,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     std::stringstream sel_path;
                     sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
                     sel_attr.set_value(sel_path.str().c_str());
-                    pugi::xml_node textNode = rem_directive.append_child(pugi::node_pcdata);
-                    textNode.text() = attribute.second.c_str();
                 }
             } else if (element.second == "REPATTR") {
                 for (auto& attribute : element.first.getAttributes()) {
