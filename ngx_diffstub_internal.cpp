@@ -165,8 +165,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     std::stringstream sel_path;
                     sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
                     sel_attr.set_value(sel_path.str().c_str());
-                    pugi::xml_node textNode = rem_directive.append_child(pugi::node_pcdata);
-                    textNode.text() = attribute.second.c_str();
                 }
             } else if (element.second == "REPATTR") {
                 for (auto& attribute : element.first.getAttributes()) {
@@ -185,16 +183,55 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
         } else if (element.first.type == "Text") {
             if (element.second == "ADD") {
                 std::cerr << "Text Node XPath: " << element.first.getXPath() << std::endl;
-                
-                pugi::xml_node add_directive = patch.append_child("add");
-                pugi::xml_attribute sel_attr = add_directive.append_attribute("sel");
 
-                /*
-                std::stringstream sel_path;
-                // Strip beginning '/' from XPath for text replace selector
-                sel_path << element.first.getXPath().substr(1).c_str();
-                sel_attr.set_value(sel_path.str().c_str());
-                */
+                std::string xpath_delimiter = "/";
+                std::string trim_xpath = element.first.getXPath().substr(1);
+                size_t start = 0;
+                size_t end = trim_xpath.find(xpath_delimiter);
+                std::vector<std::string> tokens;
+                while (end != std::string::npos) {
+                    tokens.push_back(trim_xpath.substr(start, end - start));
+                    start = end + xpath_delimiter.length();
+                    end = trim_xpath.find(xpath_delimiter, start);
+                }
+                tokens.push_back(trim_xpath.substr(start, end));
+
+                size_t cutout_chars = 0;
+                // Pop the text() token and discard
+                std::cerr << "Discarding " << tokens.back() << " ..." << std::endl;
+                // +1 for the delimeter that gets cut out of path
+                cutout_chars = cutout_chars + tokens.back().size() + 1;
+                tokens.pop_back();
+
+                std::string txt_parent_name = tokens.back();
+                // +1 for the delimeter that gets cut out of path
+                cutout_chars = cutout_chars + txt_parent_name.size() + 1;
+                tokens.pop_back();
+
+                trim_xpath = trim_xpath.substr(0, trim_xpath.size() - cutout_chars);
+
+                std::cerr << "Resulting XPATH: " << trim_xpath << std::endl;
+                
+                std::stringstream query_ss;
+                query_ss << "Patch/add[@sel=\"" << trim_xpath << "\"]/" << txt_parent_name;
+                std::cerr << query_ss.str() << std::endl;
+
+                pugi::xpath_query text_query(query_ss.str().c_str());
+                pugi::xpath_node_set results = diff_patch.select_nodes(text_query);
+
+                if (!results.empty()) {
+                    if (results.size() == 1) {
+                        pugi::xml_node parent_node = results.first().node();
+                        pugi::xml_node text_node = parent_node.append_child(pugi::node_pcdata);
+                        text_node.text() = element.first.getValue().c_str();
+                    } else {
+                        std::cerr << "ERROR: MULTIPLE PARENT ADD DIRECTIVES FOUND!" << std::endl;
+                        exit(1);
+                    }
+                } else {
+                    std::cerr << "ERROR: PARENT ADD DIRECTIVE NOT FOUND" << std::endl;
+                    exit(1);
+                }
 
             } else if (element.second == "REMOVE") {
                 pugi::xml_node remove_directive = patch.append_child("remove");
@@ -337,15 +374,17 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
                 size_t current_attr_size = std::distance(mpd1_node.attributes_begin(), mpd1_node.attributes_end());
                 size_t matched_attr_size = std::distance(matched_node.attributes_begin(), matched_node.attributes_end());
+
+                if (element.getAttributes().find("id") == element.getAttributes().end()) {
+                    std::stringstream idx_ss;
+                    idx_ss << "[" << index_map[xpath] << "]";
+                    xpath = xpath + idx_ss.str();
+                    element.setXPath(xpath);
+                }
+                    
                 if (current_attr_size == matched_attr_size) {
                     std::cerr << "Element " << full_query << " exists in MPD2." << std::endl;
                 } else {
-                    if (element.getAttributes().find("id") == element.getAttributes().end()) {
-                        std::stringstream idx_ss;
-                        idx_ss << "[" << index_map[xpath] << "]";
-                        xpath = xpath + idx_ss.str();
-                    }
-                    element.setXPath(xpath);
                     diffset[xpath] = element;
                 }
 
@@ -369,14 +408,17 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             process_node(mpd1_child, mpd2, diffset, index_map, xpath);
         }
     } else if (mpd1_node.type() == pugi::node_pcdata) {
+        XMLElement element;
+        element.type = NodeTypeToString(mpd1_node.type());
         //If node is a text node, we must process it differently
-        std::stringstream idx_ss;
-        idx_ss << "[" << index_map[xpath] << "]";
-        xpath = xpath + idx_ss.str() + "/text()";
-        std::cerr << "Text Node Path: " << xpath << std::endl;
+        xpath = xpath + "/text()";
+        element.setXPath(xpath);
+        element.setValue(mpd1_node.value());
 
+        std::cerr << "Text Node Path: " << xpath << std::endl;
         pugi::xpath_query test_query(xpath.c_str());
         pugi::xpath_node_set results = mpd2.select_nodes(test_query);
+        
 
         if (!results.empty()) {
             if (results.size() == 1) {
@@ -384,12 +426,15 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 std::string mpd2_text_content = results.first().node().value();
 
                 if (mpd1_text_content == mpd2_text_content) {
-                    std::cerr << "Element " << xpath << " matches in MPD2." << std::endl;
+                    std::cerr << "Text Element " << xpath << " matches in MPD2." << std::endl;
                 } else {
+                    /*
                     XMLElement element;
                     element.type = NodeTypeToString(mpd1_node.type());
                     element.setXPath(xpath);
                     element.setValue(mpd1_node.value());
+                    */
+                    std::cerr << "Text Element " << xpath << " mismastch in MPD2." << std::endl;
                     diffset[xpath] = element;
                 }
             } else {
@@ -398,7 +443,8 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             }
                 
         } else {
-            std::cout << "XPath query result is empty." << std::endl;
+            std::cerr << "Text Element " << xpath << " does not exist in MPD2." << std::endl;
+            diffset[xpath] = element;
         }
 
     } else {
@@ -513,7 +559,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
             // Add element to update_map with 'REPLACE' operation
             if(it->second.has_children) {
                 // Need to ADD/REM/REPLACE All Attributes for this element since it contains children
-                // CURRENTLY A BUG WHEN ADDED OR REMOVED ATTRIBUTE PRESENT, LOOK INTO
                 XMLElement add_attr;
                 for(const auto& attr: it->second.getAttributes()) {
                     auto old_it = pair.second.getAttributes().find(attr.first);
@@ -637,13 +682,16 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
 
 // Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
 // this handles appending "?publishTime" and the current manifest's publishTime to the patch_location
-const char* add_patch_location(const char* mpd, const char* patch_location, const char* ttl) {
+const char* add_patch_location(const char* mpd, const char* mpd_id, const char* patch_location, const char* ttl) {
     // Load File
     pugi::xml_document mpd_xml;
     mpd_xml.load_file((const char*) mpd);
 
     // Add Patch Location Element as the first child
     pugi::xml_node mpd_elem = mpd_xml.child("MPD");
+    pugi::xml_attribute mpd_id_attr = mpd_elem.append_attribute("id");
+    mpd_id_attr.set_value(mpd_id);
+
     pugi::xml_node pl_elem = mpd_elem.insert_child_before("PatchLocation", mpd_elem.first_child());
     pugi::xml_attribute ttl_attr = pl_elem.append_attribute("ttl");
     ttl_attr.set_value(ttl);
