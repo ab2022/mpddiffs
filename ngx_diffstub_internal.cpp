@@ -89,14 +89,14 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
     for (auto& element: deltas) {
         if (element.first.type == "Element") {
             if (element.second == "REMOVE") {
+                //TODO: Check for presence of parent node before adding a remove here (Add Test File)
                 pugi::xml_node remove_directive = patch.append_child("remove");
-                //<remove sel="doc/foo[@a='1']" ws="after"/>
                 pugi::xml_attribute attr = remove_directive.append_attribute("sel");
-                attr.set_value(element.first.getXPath().substr(1).c_str());
+                attr.set_value(element.first.getXPath().c_str());
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
                 auto pos = element.first.getXPath().find_last_of("/");
-                std::string sel_xpath = element.first.getXPath().substr(1, pos - 1);
+                std::string sel_xpath = element.first.getXPath().substr(0, pos - 1);
 
                 std::stringstream query;
                 query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
@@ -109,7 +109,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     pugi::xml_attribute attr = add_directive.append_attribute("sel");
 
                     auto pos = element.first.getXPath().find_last_of("/");
-                    attr.set_value(element.first.getXPath().substr(1, pos - 1).c_str());
+                    attr.set_value(element.first.getXPath().substr(0, pos - 1).c_str());
 
                     pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
                     for (auto& attrib: element.first.getAttributes()) {
@@ -142,7 +142,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 
                 pugi::xml_node replace_directive = patch.append_child("replace");
                 pugi::xml_attribute attribute = replace_directive.append_attribute("sel");
-                attribute.set_value(element.first.getXPath().substr(1).c_str());
+                attribute.set_value(element.first.getXPath().c_str());
                 pugi::xml_node child = replace_directive.append_child(element.first.getName().c_str());
                 for (auto& attrib: element.first.getAttributes()) {
                     pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
@@ -153,7 +153,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     pugi::xml_node add_directive = patch.append_child("add");
                     pugi::xml_attribute sel_attr = add_directive.append_attribute("sel");
                     std::stringstream sel_path;
-                    sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
+                    sel_path << element.first.getXPath().c_str() << "/@" << attribute.first;
                     sel_attr.set_value(sel_path.str().c_str());
                     pugi::xml_node textNode = add_directive.append_child(pugi::node_pcdata);
                     textNode.text() = attribute.second.c_str();
@@ -163,7 +163,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     pugi::xml_node rem_directive = patch.append_child("remove");
                     pugi::xml_attribute sel_attr = rem_directive.append_attribute("sel");
                     std::stringstream sel_path;
-                    sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
+                    sel_path << element.first.getXPath().c_str() << "/@" << attribute.first;
                     sel_attr.set_value(sel_path.str().c_str());
                 }
             } else if (element.second == "REPATTR") {
@@ -171,7 +171,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     pugi::xml_node replace_directive = patch.append_child("replace");
                     pugi::xml_attribute sel_attr = replace_directive.append_attribute("sel");
                     std::stringstream sel_path;
-                    sel_path << element.first.getXPath().substr(1).c_str() << "/@" << attribute.first;
+                    sel_path << element.first.getXPath().c_str() << "/@" << attribute.first;
                     sel_attr.set_value(sel_path.str().c_str());
                     pugi::xml_node text_node = replace_directive.append_child(pugi::node_pcdata);
                     text_node.text() = attribute.second.c_str();
@@ -185,16 +185,17 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 std::cerr << "Text Node XPath: " << element.first.getXPath() << std::endl;
 
                 std::string xpath_delimiter = "/";
-                std::string trim_xpath = element.first.getXPath().substr(1);
+                std::string xpath_query = element.first.getXPath();
+
                 size_t start = 0;
-                size_t end = trim_xpath.find(xpath_delimiter);
+                size_t end = xpath_query.find(xpath_delimiter);
                 std::vector<std::string> tokens;
                 while (end != std::string::npos) {
-                    tokens.push_back(trim_xpath.substr(start, end - start));
+                    tokens.push_back(xpath_query.substr(start, end - start));
                     start = end + xpath_delimiter.length();
-                    end = trim_xpath.find(xpath_delimiter, start);
+                    end = xpath_query.find(xpath_delimiter, start);
                 }
-                tokens.push_back(trim_xpath.substr(start, end));
+                tokens.push_back(xpath_query.substr(start, end));
 
                 size_t cutout_chars = 0;
                 // Pop the text() token and discard
@@ -208,12 +209,11 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 cutout_chars = cutout_chars + txt_parent_name.size() + 1;
                 tokens.pop_back();
 
-                trim_xpath = trim_xpath.substr(0, trim_xpath.size() - cutout_chars);
+                xpath_query = xpath_query.substr(0, xpath_query.size() - cutout_chars);
 
-                std::cerr << "Resulting XPATH: " << trim_xpath << std::endl;
                 
                 std::stringstream query_ss;
-                query_ss << "Patch/add[@sel=\"" << trim_xpath << "\"]/" << txt_parent_name;
+                query_ss << "Patch/add[@sel=\"" << xpath_query << "\"]/" << txt_parent_name;
                 std::cerr << query_ss.str() << std::endl;
 
                 pugi::xpath_query text_query(query_ss.str().c_str());
@@ -234,12 +234,13 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 }
 
             } else if (element.second == "REMOVE") {
+                //TODO: Check for presence of parent node before adding a remove here (Add Test File)
                 pugi::xml_node remove_directive = patch.append_child("remove");
                 pugi::xml_attribute sel_attr = remove_directive.append_attribute("sel");
 
                 std::stringstream sel_path;
                 // Strip beginning '/' from XPath for text replace selector
-                sel_path << element.first.getXPath().substr(1).c_str();
+                sel_path << element.first.getXPath().c_str();
                 sel_attr.set_value(sel_path.str().c_str());
             } else if (element.second == "REPLACE") {
                 pugi::xml_node replace_directive = patch.append_child("replace");
@@ -247,7 +248,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                 std::stringstream sel_path;
                 // Strip beginning '/' from XPath for text replace selector
-                sel_path << element.first.getXPath().substr(1).c_str();
+                sel_path << element.first.getXPath().c_str();
                 sel_attr.set_value(sel_path.str().c_str());
                 pugi::xml_node text_node = replace_directive.append_child(pugi::node_pcdata);
                 text_node.text() = element.first.getValue().c_str();
@@ -345,7 +346,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         std::cerr << "MPD2 Query: " << full_query << std::endl;
 
         // Check if node exists in mpd2
-        // TODO:  This is currently throwing an error for Text Nodes (i.e. Patch Location))
         // Need to write logic that addreses this (check if a child is a text note before proceeding?)
         // i.e. If node has only 1 child and is of type PCDATA...
 
@@ -387,15 +387,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 } else {
                     diffset[xpath] = element;
                 }
-
-                /*
-                for (pugi::xml_attribute attr : matched_node.attributes()) {
-                    const char* attr_name = attr.name();
-                    const char* attr_value = attr.value();
-                    std::cout << "Attribute name: " << attr_name << ", Attribute value: " << attr_value << std::endl;
-                }
-                */
-
                 
             }
         }
@@ -428,12 +419,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 if (mpd1_text_content == mpd2_text_content) {
                     std::cerr << "Text Element " << xpath << " matches in MPD2." << std::endl;
                 } else {
-                    /*
-                    XMLElement element;
-                    element.type = NodeTypeToString(mpd1_node.type());
-                    element.setXPath(xpath);
-                    element.setValue(mpd1_node.value());
-                    */
                     std::cerr << "Text Element " << xpath << " mismastch in MPD2." << std::endl;
                     diffset[xpath] = element;
                 }
