@@ -32,6 +32,13 @@
             "program": "${workspaceFolder}/diffstub",
             "args": ["-u", "mpd_samples/test_remattr.mpd"],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Run DIFFSTUB Tests",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_ngx_diffstub_internal",
+            "cwd": "${workspaceFolder}"
         }
     ],
     "version": "0.2.0",
