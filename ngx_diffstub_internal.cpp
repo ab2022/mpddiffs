@@ -96,10 +96,12 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
                 auto pos = element.first.getXPath().find_last_of("/");
-                std::string sel_xpath = element.first.getXPath().substr(0, pos - 1);
+                std::string sel_xpath = element.first.getXPath().substr(0, pos);
 
                 std::stringstream query;
                 query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
+                std::cerr << query.str() << std::endl;
+
                 pugi::xpath_query diff_query(query.str().c_str());
                 pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
@@ -109,7 +111,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     pugi::xml_attribute attr = add_directive.append_attribute("sel");
 
                     auto pos = element.first.getXPath().find_last_of("/");
-                    attr.set_value(element.first.getXPath().substr(0, pos - 1).c_str());
+                    attr.set_value(element.first.getXPath().substr(0, pos).c_str());
 
                     pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
                     for (auto& attrib: element.first.getAttributes()) {
@@ -213,8 +215,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                 
                 std::stringstream query_ss;
-                query_ss << "Patch/add[@sel=\"" << xpath_query << "\"]/" << txt_parent_name;
-                std::cerr << query_ss.str() << std::endl;
+                query_ss << "/Patch/add[@sel=\"" << xpath_query << "\"]/" << txt_parent_name;
 
                 pugi::xpath_query text_query(query_ss.str().c_str());
                 pugi::xpath_node_set results = diff_patch.select_nodes(text_query);
