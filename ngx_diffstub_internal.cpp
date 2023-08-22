@@ -144,7 +144,9 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 
                 pugi::xml_node replace_directive = patch.append_child("replace");
                 pugi::xml_attribute attribute = replace_directive.append_attribute("sel");
+
                 attribute.set_value(element.first.getXPath().c_str());
+
                 pugi::xml_node child = replace_directive.append_child(element.first.getName().c_str());
                 for (auto& attrib: element.first.getAttributes()) {
                     pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
@@ -381,11 +383,14 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                     idx_ss << "[" << index_map[xpath] << "]";
                     xpath = xpath + idx_ss.str();
                     element.setXPath(xpath);
+                } else {
+                    std::cerr << xpath << std::endl;
                 }
                     
                 if (current_attr_size == matched_attr_size) {
                     std::cerr << "Element " << full_query << " exists in MPD2." << std::endl;
                 } else {
+                    element.setXPath(xpath);
                     diffset[xpath] = element;
                 }
                 
@@ -461,14 +466,20 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     std::cerr << "\n\n" << "Starting Diff..." << "\n\n";
 
     //TBD: check if mpd1 exists, is accessible
-    pugi::xml_document client_doc;
-    client_doc.load_file((const char*) old_mpd);
+    pugi::xml_document old_doc;
+    if(!old_doc.load_file((const char*) old_mpd)) {
+        std::cerr << "Failed to load old mpd!" << std::endl;
+        exit(1);
+    }
 
-    pugi::xml_document current_doc;
-    current_doc.load_file((const char*) new_mpd);
+    pugi::xml_document new_doc;
+    if (!new_doc.load_file((const char*) new_mpd)) {
+        std::cerr << "Failed to load new mpd!" << std::endl;
+        exit(1);
+    }
 
-    std::string old_ptime = client_doc.child("MPD").attribute("publishTime").value();
-    std::string new_ptime = current_doc.child("MPD").attribute("publishTime").value();
+    std::string old_ptime = old_doc.child("MPD").attribute("publishTime").value();
+    std::string new_ptime = new_doc.child("MPD").attribute("publishTime").value();
 
     // publishTime is the same in current and incoming, return
     if (old_ptime == new_ptime)
@@ -503,19 +514,19 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     /***************
     Create Diff Sets
     ****************/
-    pugi::xml_node client_root = client_doc.child("MPD");
+    pugi::xml_node client_root = old_doc.child("MPD");
     
     // contains elements missing in current MPD
-    std::unordered_map<std::string, u_int> current_imap;
-    std::unordered_map<std::string, XMLElement> current_missing;
-    process_node(client_root, current_doc, current_missing, current_imap);
+    std::unordered_map<std::string, u_int> new_imap;
+    std::unordered_map<std::string, XMLElement> new_missing;
+    process_node(client_root, new_doc, new_missing, new_imap);
 
 
-    pugi::xml_node current_root = current_doc.child("MPD");
+    pugi::xml_node current_root = new_doc.child("MPD");
     // contains elements missing in client MPD
-    std::unordered_map<std::string, u_int> client_imap;
-    std::unordered_map<std::string, XMLElement> client_missing;
-    process_node(current_root, client_doc, client_missing, client_imap);
+    std::unordered_map<std::string, u_int> old_imap;
+    std::unordered_map<std::string, XMLElement> old_missing;
+    process_node(current_root, old_doc, old_missing, old_imap);
 
     /*
         If we use a set instead of a map, the combination of S Path + attributes will make unique objects,
@@ -526,10 +537,10 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     */
 
     std::cerr << "\nElements present in Client MPD but missing in Current MPD: " << std::endl;
-    print_diffset(current_missing);
+    print_diffset(new_missing);
 
     std::cerr << "\nElements present in Current MPD but missing in Client MPD: " << std::endl;
-    print_diffset(client_missing);
+    print_diffset(old_missing);
 
     /***************
     Compare Diff Sets
@@ -538,10 +549,10 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     ****************/
 
     std::map<XMLElement, std::string> delta_map;
-    for (const auto& pair: current_missing) {
-        auto it = client_missing.find(pair.first);
+    for (const auto& pair: new_missing) {
+        auto it = old_missing.find(pair.first);
         // If entry exist in client missing
-        if (it != client_missing.end()) {
+        if (it != old_missing.end()) {
             // Add element to update_map with 'REPLACE' operation
             if(it->second.has_children) {
                 // Need to ADD/REM/REPLACE All Attributes for this element since it contains children
@@ -606,7 +617,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
             }
 
             // Erase the entry from the client map
-            client_missing.erase(it->first);
+            old_missing.erase(it->first);
             
         } else {
             std::cerr << "Key " << pair.first << " does not exist in the map." << std::endl;
@@ -615,7 +626,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
         }
     }
     // What is left in the client_missing map should be 'ADDED'
-    for (const auto& pair: client_missing) {
+    for (const auto& pair: old_missing) {
         delta_map[pair.second] = "ADD";
     }
 
