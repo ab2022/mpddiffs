@@ -26,7 +26,7 @@ bool compare_xml_nodes(const pugi::xml_node& val_node, const pugi::xml_node& act
             }
         }
     } else {
-        return false; 
+        return false; // Number of attributes differ
     }
     
     size_t num_child_val = std::distance(val_node.children().begin(), val_node.children().end());
@@ -45,7 +45,7 @@ bool compare_xml_nodes(const pugi::xml_node& val_node, const pugi::xml_node& act
             }
         }
     } else {
-        return false;
+        return false; // Number of children differ
     }
 
     // Compare text content, if no text content exists, an empty string is returned, so this works for non-text nodes aswell
@@ -121,12 +121,20 @@ TEST_CASE("TestRemoveAttrWithChild") {
 
 
 TEST_CASE("TestReplaceAttrNoChild") {
-    FAIL("Not Implemented");
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rep_attr_no_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_attr_no_child-patch.mpd";
+    
+   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
 TEST_CASE("TestReplaceAttrWithChild") {
-    FAIL("Not Implemented");
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rep_attr_with_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_attr_with_child-patch.mpd";
+    
+   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
