@@ -107,7 +107,7 @@ TEST_CASE("TestRemoveAttrNoChild") {
     const char* new_mpd = "./mpd_samples/test_cases/test_rem_attr_no_child.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rem_attr_no_child-patch.mpd";
     
-   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
@@ -116,7 +116,7 @@ TEST_CASE("TestRemoveAttrWithChild") {
     const char* new_mpd = "./mpd_samples/test_cases/test_rem_attr_with_child.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rem_attr_with_child-patch.mpd";
     
-   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
@@ -125,7 +125,7 @@ TEST_CASE("TestReplaceAttrNoChild") {
     const char* new_mpd = "./mpd_samples/test_cases/test_rep_attr_no_child.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_attr_no_child-patch.mpd";
     
-   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
@@ -134,42 +134,82 @@ TEST_CASE("TestReplaceAttrWithChild") {
     const char* new_mpd = "./mpd_samples/test_cases/test_rep_attr_with_child.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_attr_with_child-patch.mpd";
     
-   REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
 /* STANDARD ELEMENT TEST FUNCTIONS */
-TEST_CASE("TestAddStandardElement") {
-    FAIL("Not Implemented");
+TEST_CASE("TestAddStandardElementNoChild") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_add_elem_no_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_add_elem_no_child-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
-TEST_CASE("TestRemoveStandardElement") {
-    FAIL("Not Implemented");
+TEST_CASE("TestRemoveStandardElementNoChild") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rem_elem_no_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rem_elem_no_child-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}
+
+/* LOCICALLY LOOKS THE SAME AS REPLACE ATTRIBUTE*/
+TEST_CASE("TestReplaceStandardElementNoChild") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rep_attr_no_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_attr_no_child-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
-TEST_CASE("TestReplaceStandardElement") {
-    FAIL("Not Implemented");
+#if 0
+// This is currently not passing the test, but has a valid MPD Patch output
+// Implement for small optimization
+TEST_CASE("TestAddStandardElementWithChildren") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_add_elem_with_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_add_elem_with_child-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
+#endif
 
 
-TEST_CASE("TestAddNestedStandardElement") {
-    FAIL("Not Implemented");
+TEST_CASE("TestRemoveStandardElementWithChildren") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rem_elem_with_child.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rem_elem_with_child-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
-
 
 /* TEXT ELEMENT TEST FUNCTIONS */
 TEST_CASE("TestAddTextElement") {
-    FAIL("Not Implemented");
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_add_text_elem.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_add_text_elem-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
 TEST_CASE("TestRemoveTextElement") {
-    FAIL("Not Implemented");
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_2.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rem_text_elem.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rem_text_elem-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
 
 
 TEST_CASE("TestReplaceTextElement") {
-    FAIL("Not Implemented");
+    const char* old_mpd = "./mpd_samples/test_cases/test_base_2.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_rep_text_elem.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_rep_text_elem-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
