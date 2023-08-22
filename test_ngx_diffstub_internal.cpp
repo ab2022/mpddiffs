@@ -2,7 +2,7 @@
 #include <string>
 #include <cstring>
 #include "doctest.h"
-#include "ngx_diffstub_internal.hpp" // Include your library header
+#include "ngx_diffstub_internal.hpp"
 #include "pugixml.hpp"
 
 /*  
@@ -10,6 +10,10 @@
     Optimization: Consider moving into application to remove the XMLElement class
 */
 bool compare_xml_nodes(const pugi::xml_node& val_node, const pugi::xml_node& act_node) {
+    if(val_node.type() != act_node.type()) {
+        return false; // Node types differ
+    }
+
     if (std::strcmp(val_node.name(), act_node.name()) != 0) {
         return false; // Element names differ
     }
@@ -35,6 +39,7 @@ bool compare_xml_nodes(const pugi::xml_node& val_node, const pugi::xml_node& act
         for (pugi::xml_node child1 : val_node.children()) {
             bool foundMatchingChild = false;
             for (pugi::xml_node child2 : act_node.children()) {
+                // Recursive call to compare children
                 if (compare_xml_nodes(child1, child2)) {
                     foundMatchingChild = true;
                     break;
