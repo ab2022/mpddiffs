@@ -36,8 +36,8 @@ int main (int argc, char *argv[]) {
     if (inmpd_o.length())
     {
         const char* inmpd = inmpd_o.c_str();
-        const char* mpd_patch = morph_diffs(inmpd, "mpd_samples/current.mpd");
-        //const char* mpd_patch = morph_diffs("mpd_samples/manifest_2_pl.mpd", "mpd_samples/manifest_1_pl.mpd");
+        const char* mpd_patch = morph_diffs(inmpd, "mpd_samples/current.mpd");    
+
         std::cerr << "MPD Patch: \n" << mpd_patch << "\n\n";
 
         // save the patch, other implentation operations, etc..
