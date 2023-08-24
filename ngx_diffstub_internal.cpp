@@ -15,47 +15,6 @@
 #include "diffstub_xml_node.hpp"
 
 
-/*
-#define TOK "/VAL/"
-#define TOKLEN 5
-
-struct simple_walker: pugi::xml_tree_walker
-{
-    int curdep = 0;
-    vector<string> all_elements;
-
-    virtual bool for_each(pugi::xml_node& node)
-    {
-        for (pugi::xml_attribute attr: node.attributes())
-        {
-            curdep = depth(); 
-            vector<string> path_elements;
-            pugi::xml_node temp_node = node.parent();
-
-            stringstream xps; //xpath string
-
-            for (int i = curdep; i > 0; i--) {
-                path_elements.insert(path_elements.begin(), temp_node.name());
-                temp_node = temp_node.parent();
-            }
-
-            xps << "/";
-            for (int i = 0; i < (int)path_elements.size(); i++)
-                xps << path_elements[i] << "/";
-
-            xps << node.name() << "[@" << attr.name() << "]" << TOK << attr.value();
-
-            cout << xps.str() << endl;
-
-            //cout << xps.str();
-            all_elements.push_back(xps.str()); //one string for each mpd item
-        }
-        return true; // continue traversal
-    }
-};
-*/
-
-
 /* Tranlate the delta map into XML Patch format */
 std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
     pugi::xml_document diff_patch;
@@ -100,7 +59,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                 std::stringstream query;
                 query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
-                std::cerr << query.str() << std::endl;
 
                 pugi::xpath_query diff_query(query.str().c_str());
                 pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
@@ -186,7 +144,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
             } 
         } else if (element.first.type == "Text") {
             if (element.second == "ADD") {
-                std::cerr << "Text Node XPath: " << element.first.getXPath() << std::endl;
 
                 std::string xpath_delimiter = "/";
                 std::string xpath_query = element.first.getXPath();
@@ -203,7 +160,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                 size_t cutout_chars = 0;
                 // Pop the text() token and discard
-                std::cerr << "Discarding " << tokens.back() << " ..." << std::endl;
                 // +1 for the delimeter that gets cut out of path
                 cutout_chars = cutout_chars + tokens.back().size() + 1;
                 tokens.pop_back();
@@ -338,15 +294,19 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             } else {
                 index_map[xpath]++;
                 element.index = index_map[xpath];
+                std::stringstream idx_ss;
+                idx_ss << "[" << index_map[xpath] << "]";
+                xpath = xpath + idx_ss.str();
             }
 
         } else {
             index_map[xpath]++;
             element.index = index_map[xpath];
             full_query = xpath;
+            std::stringstream idx_ss;
+            idx_ss << "[" << index_map[xpath] << "]";
+            xpath = xpath + idx_ss.str();
         }
-
-        std::cerr << "MPD2 Query: " << full_query << std::endl;
 
         // Check if node exists in mpd2
         // Need to write logic that addreses this (check if a child is a text note before proceeding?)
@@ -355,16 +315,16 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         pugi::xpath_query element_query(full_query.c_str());
         pugi::xpath_node_set results = mpd2.select_nodes(element_query);
 
-        if (results.empty()) {
-            std::cerr << "Element does not exist in MPD2!" << std::endl;
+        /*
+        if (element.getAttributes().find("id") == element.getAttributes().end()) {
+            std::stringstream idx_ss;
+            idx_ss << "[" << index_map[xpath] << "]";
+            xpath = xpath + idx_ss.str();
+        }
+        */
+        element.setXPath(xpath);
 
-            // Add [@id="<val>"] to XPath if the attribute is present for future XPath queries referencing this element
-            if (element.getAttributes().find("id") == element.getAttributes().end()) {
-                std::stringstream idx_ss;
-                idx_ss << "[" << index_map[xpath] << "]";
-                xpath = xpath + idx_ss.str();
-            }
-            element.setXPath(xpath);
+        if (results.empty()) {
             diffset[xpath] = element;
         } else {
             if (results.size() > 1) {
@@ -377,26 +337,14 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
                 size_t current_attr_size = std::distance(mpd1_node.attributes_begin(), mpd1_node.attributes_end());
                 size_t matched_attr_size = std::distance(matched_node.attributes_begin(), matched_node.attributes_end());
-
-                if (element.getAttributes().find("id") == element.getAttributes().end()) {
-                    std::stringstream idx_ss;
-                    idx_ss << "[" << index_map[xpath] << "]";
-                    xpath = xpath + idx_ss.str();
-                    element.setXPath(xpath);
-                } else {
-                    std::cerr << xpath << std::endl;
-                }
                     
-                if (current_attr_size == matched_attr_size) {
-                    std::cerr << "Element " << full_query << " exists in MPD2." << std::endl;
-                } else {
-                    element.setXPath(xpath);
+                // Matched element found but has different number of attributes
+                if (current_attr_size != matched_attr_size) {
                     diffset[xpath] = element;
                 }
                 
             }
         }
-        std::cerr << "XPath: " << xpath << std::endl << std::endl;
         
         // Process child nodes recursivly
         // Here we could recursivly pass in the current element to add children to that element, could be useful for optimization (replace element + children in one directive)
@@ -490,27 +438,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
         return "";
     }
 
-    /*
-    simple_walker walker;
-    mpd1_doc.traverse(walker); //array of xpaths in walker.all_elements
-
-    size_t pos = 0;
-    for (int i = 0; i < (int)walker.all_elements.size(); i++)
-    {
-        cout << endl;
-
-        pos = walker.all_elements[i].find(TOK);
-
-        string elpath = walker.all_elements[i].substr(0, pos);
-        string value = walker.all_elements[i].substr(pos + TOKLEN);
-
-        //cout << elpath << "\n";
-        //out << value << endl;
-        
-        //std::string val = node.node().attribute("scanType").value();
-    }
-    */
-
     /***************
     Create Diff Sets
     ****************/
@@ -535,12 +462,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
         Unoredered map should be of Xpath -> List<XMLElement> (list is ordered)
         if list is > 0 compare object indepenedently for add/remove/replace
     */
-
-    std::cerr << "\nElements present in Client MPD but missing in Current MPD: " << std::endl;
-    print_diffset(new_missing);
-
-    std::cerr << "\nElements present in Current MPD but missing in Client MPD: " << std::endl;
-    print_diffset(old_missing);
 
     /***************
     Compare Diff Sets
@@ -630,17 +551,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
         delta_map[pair.second] = "ADD";
     }
 
-    // Print out Diffset
-    std::cerr << "\n----------------------------------------\n" << std::endl;
-    for (const auto& pair: delta_map) {
-        std::cerr << "XPath: " << pair.first.getXPath() << std::endl;
-        std::cerr << "Directive: " << pair.second << std::endl;
-        std::cerr << "Attributes:" << std::endl;
-        for (const auto& attr: pair.first.getAttributes())
-            std::cerr << "  " << attr.first << ": " << attr.second << std::endl;
-        std::cerr << std::endl;
-    }
-
     /**
      * Proposed Fix for indexing
      * (IMPLEMENTED)
@@ -665,7 +575,6 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     /***************
     Create Diff File And Return
     ****************/
-    std::cerr << "-------------------------------------------" << std::endl;
     std::string diff_patch_str = translate_deltas(delta_map, old_ptime, new_ptime);
 
     // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
