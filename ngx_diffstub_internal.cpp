@@ -266,17 +266,11 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
         // If the element contains attributes
         if (!mpd1_node.attributes().empty()) {
-            std::stringstream elem_attr_filter_ss;
-            std::stringstream id_info_ss;
-
             // Create a filter stream that populates based on attribute values,
             // Used for searching for identical node in other XML document
+            std::stringstream elem_attr_filter_ss;
             elem_attr_filter_ss << "[";
             for (auto it = mpd1_node.attributes().begin(); it != mpd1_node.attributes().end(); it++) {
-
-                if (it->name() == (std::string)"id") {
-                    id_info_ss << "[@" << it->name() << "='" << it->value() << "']";
-                }
                 element.addAttribute(it->name(), it->value());
 
                 elem_attr_filter_ss << "@" << it->name() << "=" << "'" << it->value() << "'";
@@ -287,16 +281,19 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             elem_attr_filter_ss << "]";
 
             full_query = xpath + elem_attr_filter_ss.str();
-            
 
-            if (!id_info_ss.str().empty()) {
-                xpath = xpath + id_info_ss.str();
-            } else {
+            auto id_itr = element.getAttributes().find("id");
+            if (id_itr == element.getAttributes().end()) {
                 index_map[xpath]++;
                 element.index = index_map[xpath];
                 std::stringstream idx_ss;
                 idx_ss << "[" << index_map[xpath] << "]";
                 xpath = xpath + idx_ss.str();
+            } else {
+                std::string id_val = id_itr->second;
+                std::stringstream id_ss;
+                id_ss << "[@id='" << id_val << "']";
+                xpath = xpath + id_ss.str();
             }
 
         } else {
@@ -315,13 +312,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         pugi::xpath_query element_query(full_query.c_str());
         pugi::xpath_node_set results = mpd2.select_nodes(element_query);
 
-        /*
-        if (element.getAttributes().find("id") == element.getAttributes().end()) {
-            std::stringstream idx_ss;
-            idx_ss << "[" << index_map[xpath] << "]";
-            xpath = xpath + idx_ss.str();
-        }
-        */
         element.setXPath(xpath);
 
         if (results.empty()) {
@@ -359,6 +349,7 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         xpath = xpath + "/text()";
         element.setXPath(xpath);
         element.setValue(mpd1_node.value());
+        element.has_children = false;
 
         std::cerr << "Text Node Path: " << xpath << std::endl;
         pugi::xpath_query test_query(xpath.c_str());
