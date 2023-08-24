@@ -65,6 +65,7 @@ bool execute_test_case(const char* old_mpd, const char* new_mpd, const char* mpd
     const char* mpd_patch_act = morph_diffs(old_mpd, new_mpd);
 
     std::cerr << "\n MORPH DIFFS OUTPUT: \n" << mpd_patch_act << std::endl;
+    std::cerr << "----------------------" << std::endl;
 
     pugi::xml_document validate_patch, actual_patch;
     if (!validate_patch.load_file(mpd_patch_val_file)) {
