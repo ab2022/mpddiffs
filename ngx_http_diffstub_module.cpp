@@ -18,6 +18,7 @@ extern "C" {
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+
 #define NGX_HTTP_DAV_OFF             2
 
 
@@ -284,8 +285,8 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
 
     // Initialize constants
     const char *manifestFilePath = "/dev/shm/dash/Service2/manifest.mpd";
-    char *patchFilePath = "/dev/shm/dash/Service2/live-stream/patch.mpd?";
-    char *patchLocationPath = "/dash/Service2/live-stream/patch.mpd?";
+    char *patchFilePath = "/dev/shm/dash/Service2/live-stream/patch.mpd-";
+    char *patchLocationPath = "/dash/Service2/live-stream/patch.mpd-";
 
     // Calculate length of strings
     int patchFilePathLength = strlen(patchFilePath);
