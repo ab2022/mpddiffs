@@ -18,7 +18,6 @@ extern "C" {
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-
 #define NGX_HTTP_DAV_OFF             2
 
 
@@ -310,21 +309,23 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
                     "before add_patch_location: \"%s\"", temp->data);
         
         // Extract publishTime from existing mpd
-        const char *publishTime = extractPublishTime(manifestFilePath);
+        const char *originalPublishTime = extractPublishTime(manifestFilePath);
+        const char *incomingPublishTime = extractPublishTime((const char*)temp->data);
 
-        int publishTimeLength = strlen(publishTime);
+        int originalPublishTimeLength = strlen(originalPublishTime);
+        int incomingPublishTimeLength = strlen(incomingPublishTime);
 
         // Allocate memory for the concatenated string
-        char *resultingPatchFilePath = (char*)malloc(patchFilePathLength + publishTimeLength + 1);
+        char *resultingPatchFilePath = (char*)malloc(patchFilePathLength + originalPublishTimeLength + 1);
         strcpy(resultingPatchFilePath,patchFilePath);
-        strcpy(resultingPatchFilePath+patchFilePathLength,publishTime);
+        strcpy(resultingPatchFilePath+patchFilePathLength,originalPublishTime);
 
         // Allocate memory for the concatenated string
-        char *resultingPatchLocationPath = (char*)malloc(patchLocationPathLength + publishTimeLength + 1);
+        char *resultingPatchLocationPath = (char*)malloc(patchLocationPathLength + incomingPublishTimeLength + 1);
         strcpy(resultingPatchLocationPath,patchLocationPath);
-        strcpy(resultingPatchLocationPath+patchLocationPathLength,publishTime);
+        strcpy(resultingPatchLocationPath+patchLocationPathLength,incomingPublishTime);
 
-        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "120");
+        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
         
         // Save right back to (const char*)temp->data
         FILE *file = fopen((const char*)temp->data, "w");
