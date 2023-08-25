@@ -10,6 +10,7 @@
 #include <set>
 #include <unordered_map>
 #include <map>
+#include <vector>
 #include "pugixml.hpp"
 #include "ngx_diffstub_internal.hpp"
 #include "diffstub_xml_node.hpp"
@@ -577,8 +578,23 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     return diff_patch_c_str;
 }
 
+const char* extractPublishTime(const char* mpd){
+    // Load File
+    pugi::xml_document mpd_xml;
+    mpd_xml.load_file((const char*) mpd);
+
+    // Add Patch Location Element as the first child
+    pugi::xml_node mpd_elem = mpd_xml.child("MPD");
+    std::string publish_time = mpd_elem.attribute("publishTime").value();
+
+    char* xml_c_str = (char*) malloc(publish_time.size() + 1);
+    std::strcpy(xml_c_str, publish_time.c_str());
+
+    // Return the C-style string
+    return xml_c_str;
+}
+
 // Changed 'ttl' to char* because it needs to be a string when setting the value of a text node
-// this handles appending "?publishTime" and the current manifest's publishTime to the patch_location
 const char* add_patch_location(const char* mpd, const char* mpd_id, const char* patch_location, const char* ttl) {
     // Load File
     pugi::xml_document mpd_xml;
@@ -594,10 +610,7 @@ const char* add_patch_location(const char* mpd, const char* mpd_id, const char* 
     ttl_attr.set_value(ttl);
     pugi::xml_node pl_text_field = pl_elem.append_child(pugi::node_pcdata);
     
-    // append current mpd's publishTime to patch_location
-    std::string publish_time = mpd_elem.attribute("publishTime").value();
     std::string patch_location_str = patch_location;
-    patch_location_str.append("?publishTime=").append(publish_time);
     pl_text_field.set_value(patch_location_str.c_str());
 
     // Save the XML document to a string

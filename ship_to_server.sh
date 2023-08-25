@@ -10,21 +10,21 @@ tar --exclude=".git" --exclude=".gitignore" -czf /tmp/archive.tar.gz -C $source_
 echo 'tar created'
 
 # Take Diffstub backup
-ssh -p 20202 $destination_user@$destination_host "mv /home/ubuntu/diffstub /home/ubuntu/diffstub_$(date +%s)_backup"
+ssh -p 20202 -i ~/.ssh/id_rsa_aws $destination_user@$destination_host "mv /home/ubuntu/diffstub /home/ubuntu/diffstub_$(date +%s)_backup"
 echo 'diffstub backed up'
 
 # Create new empty diffstub directory
-ssh -p 20202 $destination_user@$destination_host "mkdir /home/ubuntu/diffstub"
+ssh -p 20202 -i ~/.ssh/id_rsa_aws $destination_user@$destination_host "mkdir /home/ubuntu/diffstub"
 echo 'diffstub created'
 
 # Transfer the archived files to the VM using scp
-scp -P 20202 /tmp/archive.tar.gz $destination_user@$destination_host:$destination_path
+scp -P 20202 -i ~/.ssh/id_rsa_aws /tmp/archive.tar.gz $destination_user@$destination_host:$destination_path
 echo 'tar transferred'
 
 # Extract the files on the VM using tar
-ssh -p 20202 $destination_user@$destination_host "tar -xzf $destination_path/archive.tar.gz -C $destination_path"
+ssh -p 20202 -i ~/.ssh/id_rsa_aws $destination_user@$destination_host "tar -xzf $destination_path/archive.tar.gz -C $destination_path"
 echo 'tar extracted'
 
 # Remove the temporary archive file on the VM
-ssh -p 20202 $destination_user@$destination_host "rm $destination_path/archive.tar.gz"
+ssh -p 20202 -i ~/.ssh/id_rsa_aws $destination_user@$destination_host "rm $destination_path/archive.tar.gz"
 echo 'tar removed'
