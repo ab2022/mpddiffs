@@ -371,53 +371,6 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         free(resultingPatchFilePath);
     }
     else{
-    
-        ////
-        // Add patch location to incoming manifest.mpd
-        // Using incoming mpd publishTime because no current mpd exists
-        ////
-
-        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                    "before add_patch_location: \"%s\"", temp->data);
-        
-        // Extract publishTime from income mpd
-        const char *publishTime = extractPublishTime((const char*)temp->data);
-
-        int publishTimeLength = strlen(publishTime);
-
-        // Allocate memory for the concatenated string
-        char *resultingPatchFilePath = (char*)malloc(patchFilePathLength + publishTimeLength + 1);
-        strcpy(resultingPatchFilePath,patchFilePath);
-        strcpy(resultingPatchFilePath+patchFilePathLength,publishTime);
-
-        // Allocate memory for the concatenated string
-        char *resultingPatchLocationPath = (char*)malloc(patchLocationPathLength + publishTimeLength + 1);
-        strcpy(resultingPatchLocationPath,patchLocationPath);
-        strcpy(resultingPatchLocationPath+patchLocationPathLength,publishTime);
-
-        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "120");
-        
-        // Save right back to (const char*)temp->data
-        FILE *file = fopen((const char*)temp->data, "w");
-        
-        if(file == NULL){
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be opened", temp->data);
-        }
-
-        size_t dataSize = strlen(mpd_with_patch_location);
-        size_t elementsWritten = fwrite(mpd_with_patch_location, sizeof(char), dataSize, file);
-
-        // Confirm data was written successfully
-        if (elementsWritten != dataSize) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be written", temp->data);
-        }
-
-        // Free memory
-        fclose(file);
-        free((void*) mpd_with_patch_location);
-        free(resultingPatchLocationPath);
 
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                     "diffstub manifest.mpd not found, skipping morph_diffs");
