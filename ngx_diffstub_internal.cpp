@@ -15,8 +15,8 @@
 #include "diffstub_xml_node.hpp"
 
 
-bool omit_nested_element(const XMLElement& element, const pugi::xml_document& diff_patch) {
-    int delim_ct = 0;
+bool is_nested_element(const XMLElement& element, const pugi::xml_document& diff_patch) {
+    size_t delim_ct = 0;
     for (char c : element.getXPath()) {
         if (c == '/') {
             delim_ct++;
@@ -34,7 +34,7 @@ bool omit_nested_element(const XMLElement& element, const pugi::xml_document& di
 
         if (!results.empty()) {
             if (results.size() == 1) {
-                return true;
+                return true; // Parent node was found in diff_patch
 
             } else {
                 std::cerr << "UNEXPECTED NUMBER OF RESULTS FOUND" << std::endl;
@@ -45,7 +45,7 @@ bool omit_nested_element(const XMLElement& element, const pugi::xml_document& di
         pos = sel_xpath.find_last_of("/");
         sel_xpath = sel_xpath.substr(0, pos);
     }
-    return false;
+    return false; // Parent node was not found in diff_patch
 }
 
 /* Tranlate the delta map into XML Patch format */
@@ -83,7 +83,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
         // This logic applies to any node type
         if (element.first.type == "Element") {
             if (element.second == "REMOVE") {
-                if (!omit_nested_element(element.first, diff_patch)) {
+                if (!is_nested_element(element.first, diff_patch)) {
                     //TODO: Check for presence of parent node before adding a remove here (Add Test File)
                     pugi::xml_node remove_directive = patch.append_child("remove");
                     pugi::xml_attribute attr = remove_directive.append_attribute("sel");
@@ -230,7 +230,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 }
 
             } else if (element.second == "REMOVE") {
-                if (!omit_nested_element(element.first, diff_patch)) {
+                if (!is_nested_element(element.first, diff_patch)) {
                     //TODO: Check for presence of parent node before adding a remove here (Add Test File)
                     pugi::xml_node remove_directive = patch.append_child("remove");
                     pugi::xml_attribute sel_attr = remove_directive.append_attribute("sel");
