@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD availabilityStartTime="2022-04-18T21:28:44Z" maxSegmentDuration="PT1.92S" minBufferTime="PT1S" minimumUpdatePeriod="PT7S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2022-05-22T17:22:06Z" timeShiftBufferDepth="PT1M1S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+<MPD availabilityStartTime="2022-04-18T21:28:44Z" maxSegmentDuration="PT1.92S" minBufferTime="PT1S" minimumUpdatePeriod="PT7S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2022-05-22T17:22:12Z" timeShiftBufferDepth="PT1M1S" type="dynamic" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
    <Period id="P0" start="PT0S">
-      <AdaptationSet contentType="video" id="0" maxFrameRate="50" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="25" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+      <AdaptationSet contentType="video" id="0" maxFrameRate="50" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="25" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true">
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
          <SegmentTemplate initialization="video-$Bandwidth$-init.mp4" media="video-$Bandwidth$-$Time$.mp4v" startNumber="859540274" timescale="50">
             <SegmentTimeline>
-               <S d="96" r="15" t="146138400"/>
+               <S d="91" r="12" t="146137824"/>
+               <S d="93" r="14" t="148999021"/>
             </SegmentTimeline>
          </SegmentTemplate>
          <Representation bandwidth="800000" codecs="avc1.4d401e" frameRate="25" height="360" id="Video1_5" sar="1:1" scanType="progressive" width="640"/>
@@ -18,7 +19,7 @@
          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
          <SegmentTemplate initialization="audio-0-$Bandwidth$-init.mp4" media="audio-0-$Bandwidth$-$Time$.mp4a" startNumber="859540274" timescale="48000">
             <SegmentTimeline>
-               <S d="92160" r="15" t="140292864832"/>
+               <S d="92160" r="15" t="140292311872"/>
             </SegmentTimeline>
          </SegmentTemplate>
          <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>

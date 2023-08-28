@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Patch xmlns="urn:mpeg:dash:schema:mpd-patch:2020" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd" mpdId="?" originalPublishTime="2022-05-22T17:22:10Z" publishTime="2022-05-22T17:22:12Z">
+        <replace sel="/MPD[1]/@publishTime">2022-05-22T17:22:12Z</replace>
+        <add sel="/MPD[1]">
+                <PatchLocation ttl="60">live-stream/patch.mpd?publishTime=2022-05-22T17:22:12Z</PatchLocation>
+        </add>
+</Patch>

@@ -1,0 +1,18 @@
+When an attribute is added/changed in an element, you can chose the directives to use:
+    - replace the element with updated attributes, 
+    - replace/add the single attribute on the element
+Custom code needed for Representations/Segments? What makes a representation unique, a combination of attributes?
+    - I.E. Can you use (minimal amount) attribute values to identify distinct Segments/Representations (Basically how to handle when An Id Field does not exist)
+
+
+Ratio of identical bytes in MP1 vs MPD2 and use ratio to determine replacement of element vs attibute
+Size of attribute doesnt matter, size of element matters
+
+Bandwitdh is unique, id is always unique
+
+Segments:
+- order required (ascending t)
+- t and d wont change, r can
+- when sorting by r * d , multiply by r+1, (if r=-1 has to be last in segments)
+
+Compare results with XDIFF (CLI)
