@@ -16,6 +16,39 @@
 #include "diffstub_xml_node.hpp"
 
 
+bool is_nested_element(const XMLElement& element, const pugi::xml_document& diff_patch) {
+    size_t delim_ct = 0;
+    for (char c : element.getXPath()) {
+        if (c == '/') {
+            delim_ct++;
+        }
+    }
+
+    auto pos = element.getXPath().find_last_of("/");
+    std::string sel_xpath = element.getXPath().substr(0, pos);
+    for (size_t i = 0; i < delim_ct - 2; i++) {
+        std::stringstream query;
+        query << "Patch/remove[@sel=\"" << sel_xpath << "\"]";
+        std::cout << "Parent Sel: " << query.str() << std::endl;
+        pugi::xpath_query diff_query(query.str().c_str());
+        pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
+
+        if (!results.empty()) {
+            if (results.size() == 1) {
+                return true; // Parent node was found in diff_patch
+
+            } else {
+                std::cerr << "UNEXPECTED NUMBER OF RESULTS FOUND" << std::endl;
+                exit(1);
+            }
+        }
+
+        pos = sel_xpath.find_last_of("/");
+        sel_xpath = sel_xpath.substr(0, pos);
+    }
+    return false; // Parent node was not found in diff_patch
+}
+
 /* Tranlate the delta map into XML Patch format */
 std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, std::string& old_pub_time, std::string& new_pub_time) {
     pugi::xml_document diff_patch;
@@ -47,12 +80,16 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
     
 
     for (auto& element: deltas) {
+        // Ignore any nested children with a 'remove' selector to a parent node already present
+        // This logic applies to any node type
         if (element.first.type == "Element") {
             if (element.second == "REMOVE") {
-                //TODO: Check for presence of parent node before adding a remove here (Add Test File)
-                pugi::xml_node remove_directive = patch.append_child("remove");
-                pugi::xml_attribute attr = remove_directive.append_attribute("sel");
-                attr.set_value(element.first.getXPath().c_str());
+                if (!is_nested_element(element.first, diff_patch)) {
+                    //TODO: Check for presence of parent node before adding a remove here (Add Test File)
+                    pugi::xml_node remove_directive = patch.append_child("remove");
+                    pugi::xml_attribute attr = remove_directive.append_attribute("sel");
+                    attr.set_value(element.first.getXPath().c_str());
+                }
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
                 auto pos = element.first.getXPath().find_last_of("/");
@@ -194,20 +231,20 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 }
 
             } else if (element.second == "REMOVE") {
-                //TODO: Check for presence of parent node before adding a remove here (Add Test File)
-                pugi::xml_node remove_directive = patch.append_child("remove");
-                pugi::xml_attribute sel_attr = remove_directive.append_attribute("sel");
+                if (!is_nested_element(element.first, diff_patch)) {
+                    //TODO: Check for presence of parent node before adding a remove here (Add Test File)
+                    pugi::xml_node remove_directive = patch.append_child("remove");
+                    pugi::xml_attribute sel_attr = remove_directive.append_attribute("sel");
 
-                std::stringstream sel_path;
-                // Strip beginning '/' from XPath for text replace selector
-                sel_path << element.first.getXPath().c_str();
-                sel_attr.set_value(sel_path.str().c_str());
+                    std::stringstream sel_path;
+                    sel_path << element.first.getXPath().c_str();
+                    sel_attr.set_value(sel_path.str().c_str());
+                }
             } else if (element.second == "REPLACE") {
                 pugi::xml_node replace_directive = patch.append_child("replace");
                 pugi::xml_attribute sel_attr = replace_directive.append_attribute("sel");
 
                 std::stringstream sel_path;
-                // Strip beginning '/' from XPath for text replace selector
                 sel_path << element.first.getXPath().c_str();
                 sel_attr.set_value(sel_path.str().c_str());
                 pugi::xml_node text_node = replace_directive.append_child(pugi::node_pcdata);
@@ -284,13 +321,13 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             full_query = xpath + elem_attr_filter_ss.str();
 
             auto id_itr = element.getAttributes().find("id");
-            if (id_itr == element.getAttributes().end()) {
+            if (id_itr == element.getAttributes().end()) {  // 'id' attribute not found
                 index_map[xpath]++;
                 element.index = index_map[xpath];
                 std::stringstream idx_ss;
                 idx_ss << "[" << index_map[xpath] << "]";
                 xpath = xpath + idx_ss.str();
-            } else {
+            } else {                                        // 'id' attribute found
                 std::string id_val = id_itr->second;
                 std::stringstream id_ss;
                 id_ss << "[@id='" << id_val << "']";
@@ -562,6 +599,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
         - Use examples from rfc5261 / Find a testing framework
         - No Testing done for nested elements
     */
+
 
 
     /***************
