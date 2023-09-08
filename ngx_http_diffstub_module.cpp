@@ -243,6 +243,25 @@ ngx_http_diffstub_handler(ngx_http_request_t *r)
     return NGX_DECLINED;
 }
 
+static void diffstub_save_file(char* stringToSave, char* filePath, ngx_http_request_t *r){
+    FILE *file = fopen(filePath, "w");
+    if(file == NULL){
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "diffstub temp filename: \"%s\" could not be opened", filePath);
+    }
+
+    size_t dataSize = strlen(stringToSave);
+    size_t elementsWritten = fwrite(stringToSave, sizeof(char), dataSize, file);
+
+    // Confirm data was written successfully
+    if (elementsWritten != dataSize) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "diffstub temp filename: \"%s\" could not be written", filePath);
+    }
+
+    // Free memory
+    fclose(file);
+}
 
 static void
 ngx_http_diffstub_put_handler(ngx_http_request_t *r)
@@ -283,6 +302,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
     ////
 
     // Initialize constants
+    const char *manifestNoPatchLocationFilePath = "/dev/shm/dash/Service2/manifestNoPL.mpd";
     const char *manifestFilePath = "/dev/shm/dash/Service2/manifest.mpd";
     char *patchFilePath = "/dev/shm/dash/Service2/live-stream/patch.mpd-";
     char *patchLocationPath = "/dash/Service2/live-stream/patch.mpd-";
@@ -294,6 +314,34 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "before morph_diffs");
 
+    // Save manifest with no patch location for demo purposes
+    FILE *sourceFile, *destinationFile;
+    char content[100];
+
+    // Open the source file for reading
+    sourceFile = fopen((char*)temp->data, "r");
+    if (sourceFile == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "diffstub temp filename: \"%s\" could not be opened", (char*)temp->data);
+        return;
+    }
+
+    // Open the destination file for writing
+    destinationFile = fopen(manifestNoPatchLocationFilePath, "w");
+    if (destinationFile == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "diffstub temp filename: \"%s\" could not be written", manifestNoPatchLocationFilePath);
+        return;
+    }
+
+    // Read content from the source file and write it to the destination file
+    while (fgets(content, sizeof(content), sourceFile) != NULL) {
+        fputs(content, destinationFile);
+    }
+
+    // Close the files
+    fclose(sourceFile);
+    fclose(destinationFile);
 
     // Check if the manifest is there first
     FILE *old_mpd_file = fopen(manifestFilePath, "r");
@@ -328,45 +376,16 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
         
         // Save right back to (const char*)temp->data
-        FILE *file = fopen((const char*)temp->data, "w");
+        diffstub_save_file((char*)mpd_with_patch_location, (char*)temp->data, r);
         
-        if(file == NULL){
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be opened", temp->data);
-        }
-
-        size_t dataSize = strlen(mpd_with_patch_location);
-        size_t elementsWritten = fwrite(mpd_with_patch_location, sizeof(char), dataSize, file);
-
-        // Confirm data was written successfully
-        if (elementsWritten != dataSize) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be written", temp->data);
-        }
-
-        // Free memory
-        fclose(file);
         free((void*) mpd_with_patch_location);
         free(resultingPatchLocationPath);
 
         const char* mpd_patch = morph_diffs(manifestFilePath,(const char*)temp->data);
 
         // Save to live-stream/patch.mpd
-        FILE *patch_file = fopen(resultingPatchFilePath, "w");
-        if(patch_file == NULL){
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub patch filename: \"%s\" could not be opened", patchFilePath);
-        }
-
-        dataSize = strlen(mpd_patch);
-        elementsWritten = fwrite(mpd_patch, sizeof(char), dataSize, patch_file);
+        diffstub_save_file((char*)mpd_patch, resultingPatchFilePath, r);
         
-        if (elementsWritten != dataSize) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub patch filename: \"%s\" could not be written", patchFilePath);
-        }
-        // Free memory
-        fclose(patch_file);
         free((void*) mpd_patch);
         free(resultingPatchFilePath);
     }
