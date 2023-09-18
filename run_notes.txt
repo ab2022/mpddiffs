@@ -1,0 +1,20 @@
+http://35.88.227.80:14004/dash/Service2/manifest.mpd
+http://35.88.227.80:14004/dash/Service2/manifestNoPL.mpd
+http://35.88.227.80:14004/dash/Service2/live-stream/patch.mpd-2023-09-18T15:48:02Z
+
+/etc/nginx/nginx.conf
+/var/log/error.log -- General NGINX error
+/var/log/nginx/error.log -- Module cerr logs
+/var/log/access.log -- File Access logs
+
+# When wipe occurs, run the following:
+mkdir /dev/shm/nginx
+mkdir /dev/shm/nginx/client_temp
+mkdir /dev/shm/dash/Service2/live-stream
+
+
+# To Deploy
+# Run ship_to_server
+ssh EC2 (Origin)
+cd ~/diffstub
+./run_on_server.sh
