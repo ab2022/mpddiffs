@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the directory containing your XML files
-test_dir="/Users/eponde494/Workspace/diffstub/mpd_samples/test_cases"
+test_dir="./mpd_samples/test_cases"
 
 # Loop through all MPD files in the directory
 for file in "$test_dir"/*.mpd; do
