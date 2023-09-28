@@ -8,8 +8,7 @@ http://35.88.227.80:14004/dash/Service2/live-stream/patch.mpd-2023-09-18T15:48:0
 /var/log/access.log -- File Access logs
 
 # When wipe occurs, run the following:
-mkdir /dev/shm/nginx
-mkdir /dev/shm/nginx/client_temp
+mkdir -p /dev/shm/nginx/client_temp
 mkdir /dev/shm/dash/Service2/live-stream
 
 
@@ -18,3 +17,8 @@ mkdir /dev/shm/dash/Service2/live-stream
 ssh EC2 (Origin)
 cd ~/diffstub
 ./run_on_server.sh
+
+
+DashAdapter
+isPatchValid
+applyPatchToManifest
