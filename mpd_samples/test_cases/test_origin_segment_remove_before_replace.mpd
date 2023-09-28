@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" availabilityStartTime="2023-09-15T14:47:07Z" maxSegmentDuration="PT2.016S" minBufferTime="PT1S" minimumUpdatePeriod="PT2S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2023-09-19T19:54:35Z" timeShiftBufferDepth="PT4M16S" type="dynamic" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd http://dashif.org/guidelines/ContentProtection laurl.xsd" id="?">
-  <PatchLocation ttl="140">/dash/Service2/live-stream/patch.mpd-2023-09-19T19:54:35Z</PatchLocation>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" availabilityStartTime="2023-09-15T14:47:07Z" maxSegmentDuration="PT2.016S" minBufferTime="PT1S" minimumUpdatePeriod="PT2S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2023-09-19T19:54:37Z" timeShiftBufferDepth="PT4M16S" type="dynamic" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd http://dashif.org/guidelines/ContentProtection laurl.xsd" id="?">
+  <PatchLocation ttl="140">/dash/Service2/live-stream/patch.mpd-2023-09-19T19:54:37Z</PatchLocation>
   <Period id="P0" start="PT0S">
     <AdaptationSet contentType="video" id="0" maxFrameRate="60000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
@@ -18,7 +18,6 @@
     <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
       <SegmentTemplate availabilityTimeComplete="false" availabilityTimeOffset="0.801000" initialization="$RepresentationID$-init.mp4" media="$RepresentationID$-$Time$.m4s" presentationTimeOffset="960" timescale="48000">
         <SegmentTimeline>
-          <S d="96256" t="17468139456"/>
           <S d="95232" t="17468235712"/>
           <S d="96256" r="4" t="17468330944"/>
           <S d="95232" t="17468812224"/>
@@ -34,7 +33,7 @@
           <S d="95232" t="17471887296"/>
           <S d="96256" r="5" t="17471982528"/>
           <S d="95232" t="17472560064"/>
-          <S d="96256" r="4" t="17472655296"/>
+          <S d="96256" t="17472655296"/>
           <S d="95232" t="17473136576"/>
           <S d="96256" r="5" t="17473231808"/>
           <S d="95232" t="17473809344"/>

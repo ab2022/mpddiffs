@@ -219,3 +219,12 @@ TEST_CASE("TestReplaceTextElement") {
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
+
+
+TEST_CASE("TestMultiSegmentEditRemoveReplace") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_origin_segment_remove_before_replace.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_segment_remove_before_replace-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}

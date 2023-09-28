@@ -321,17 +321,35 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             full_query = xpath + elem_attr_filter_ss.str();
 
             auto id_itr = element.getAttributes().find("id");
-            if (id_itr == element.getAttributes().end()) {  // 'id' attribute not found
+            // TODO Implement S@t or (mutex) S@n addressing
+            if (id_itr != element.getAttributes().end()) {             // 'id' attribute found
+                std::string id_val = id_itr->second;
+                std::stringstream id_ss;
+                id_ss << "[@id='" << id_val << "']";
+                xpath = xpath + id_ss.str();
+            } else if (element.getName() == "S") {                     // is a Segment
+                auto t_itr = element.getAttributes().find("t");
+                auto n_itr = element.getAttributes().find("n");
+                if (t_itr != element.getAttributes().end()) {          // If t is present in segment
+                    std::string t_val = t_itr->second;
+                    std::stringstream t_ss;
+                    t_ss << "[@t='" << t_val << "']";
+                    xpath = xpath + t_ss.str();
+                } else if (n_itr != element.getAttributes().end()) {   // If n is present in segment
+                    std::string n_val = n_itr->second;
+                    std::stringstream n_ss;
+                    n_ss << "[@n='" << n_val << "']";
+                    xpath = xpath + n_ss.str();
+                } else {
+                    std::cerr << "ERROR: No valid attributes to assign for addressing Segment (S)!" << std::endl;
+                    exit(1);
+                }
+            } else {                                                  // no addressing attributes found
                 index_map[xpath]++;
                 element.index = index_map[xpath];
                 std::stringstream idx_ss;
                 idx_ss << "[" << index_map[xpath] << "]";
                 xpath = xpath + idx_ss.str();
-            } else {                                        // 'id' attribute found
-                std::string id_val = id_itr->second;
-                std::stringstream id_ss;
-                id_ss << "[@id='" << id_val << "']";
-                xpath = xpath + id_ss.str();
             }
 
         } else {
