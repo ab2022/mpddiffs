@@ -16,6 +16,8 @@ private:
 public:
     size_t index;
     std::string type;
+    std::string relative_pos;
+    std::string adjacent_sibling_rel_val;
 
     bool has_children;
 

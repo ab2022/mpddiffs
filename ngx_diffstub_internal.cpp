@@ -92,13 +92,24 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 }
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
-                auto pos = element.first.getXPath().find_last_of("/");
-                std::string sel_xpath = element.first.getXPath().substr(0, pos);
-
-                std::stringstream query;
-                query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
-
-                pugi::xpath_query diff_query(query.str().c_str());
+                pugi::xpath_query diff_query;
+                if (element.first.getName() == "S") {
+                    //TODO: Rework Selector logic to check if an t or s selector is used for Segments
+                    // i.e. sel="/MPD/.../SegmentTimeline[1]/S[@t]"... this wont work though because not all segment adds will be adjacent
+                    // Do you need to duplicate the "ADD CHILD" logic or can we utilize it for segment and non segment types?
+                    auto pos = element.first.getXPath().find_last_of("/");
+                    std::string sel_xpath = element.first.getXPath().substr(0, pos);
+                    std::stringstream query;
+                    query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
+                    diff_query = pugi::xpath_query(query.str().c_str());
+                } else {
+                    auto pos = element.first.getXPath().find_last_of("/");
+                    std::string sel_xpath = element.first.getXPath().substr(0, pos);
+                    std::stringstream query;
+                    query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
+                    diff_query = pugi::xpath_query(query.str().c_str());
+                }
+                
                 pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
                 // IF we have not encountered this selector before, add a new element, otherwise edit the existing 'ADD' selector
@@ -114,6 +125,8 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                         pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
                         attribute.set_value(attrib.second.c_str());
                     }
+
+
                 } else if (results.size() == 1) {
                     pugi::xml_node matched_node = results.first().node();
 
@@ -292,6 +305,9 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
     if (mpd1_node.type() == pugi::node_element) {
         xpath = xpath + "/" + mpd1_node.name();
         XMLElement element;
+        element.relative_pos = "";                  // Only Relative to segment positioning
+        element.adjacent_sibling_rel_val = "";      // Only Relative to segment positioning
+
         element.type = NodeTypeToString(mpd1_node.type());
 
         if (mpd1_node.children().empty()) {
@@ -335,11 +351,29 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                     std::stringstream t_ss;
                     t_ss << "[@t='" << t_val << "']";
                     xpath = xpath + t_ss.str();
+
+                    if(mpd1_node.parent().first_child() == mpd1_node) { // If this is the first element of SegmentTimeline
+                        element.relative_pos = "before";
+                        element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute("t").value();
+                    } else {
+                        // pos = after prev t val
+                        element.relative_pos = "after";
+                        element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute("t").value();
+                    }
                 } else if (n_itr != element.getAttributes().end()) {   // If n is present in segment
                     std::string n_val = n_itr->second;
                     std::stringstream n_ss;
                     n_ss << "[@n='" << n_val << "']";
                     xpath = xpath + n_ss.str();
+
+                    if(mpd1_node.parent().first_child() == mpd1_node) { // If this is the first element of SegmentTimeline
+                        element.relative_pos = "before";
+                        element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute("n").value();
+                    } else {
+                        // pos = after prev t val
+                        element.relative_pos = "after";
+                        element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute("n").value();
+                    }
                 } else {
                     std::cerr << "ERROR: No valid attributes to assign for addressing Segment (S)!" << std::endl;
                     exit(1);
