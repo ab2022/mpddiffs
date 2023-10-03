@@ -248,11 +248,19 @@ TEST_CASE("TestAddConsecutiveSegmentToMiddleTimeline") {
 }
 
 
-
 TEST_CASE("TestAddNonConsecutiveSegments") {
     const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
     const char* new_mpd = "./mpd_samples/test_cases/test_origin_non_cons_add_segment.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_non_cons_add_segment-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}
+
+
+TEST_CASE("TestAddConsecutiveSegmentsBeginning") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning-patch.mpd";
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }

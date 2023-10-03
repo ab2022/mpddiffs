@@ -109,24 +109,11 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                     bool new_node = true;
 
-                    /*
-                    if (attr) {  // Check if the attribute exists
-                        const char* attrValue = attr.value();
-                        const char* expectedValue = element.first.adjacent_sibling_rel_val.c_str();
-
-                        if (strcmp(attrValue, expectedValue) == 0) {
-                            // The attribute value matches the expected value
-                        }
-                    } else {
-                        // Handle the case where the attribute does not exist
-                    }
-                    */
-
-
                     // IF we have not encountered this selector before, add a new Segment, otherwise edit the existing 'ADD' selector
                     if (!results.empty()) {
                         for (const pugi::xpath_node& matched_xpath_node: results) {
                             pugi::xml_node matched_patch_node = matched_xpath_node.node();
+
                             for(pugi::xml_node child: matched_patch_node.children()) {
                                 pugi::xml_attribute attr = child.attribute(element.first.selector_attrib.c_str());
                                 const char* attr_value = attr.value();
@@ -139,6 +126,14 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                                         segment_elem = matched_patch_node.insert_child_before(element.first.getName().c_str(), child);
                                     } else if (element.first.relative_pos == "after") {  // Add element to list after specific element
                                         segment_elem = matched_patch_node.insert_child_after(element.first.getName().c_str(), child);
+                                        pugi::xml_attribute pos_attr = matched_patch_node.attribute("pos");
+                                        if(strcmp(pos_attr.value(), "before") == 0) {
+                                            pugi::xml_attribute sel_attr = matched_patch_node.attribute("sel");
+                                            std::string base_xpath = element.first.getXPath().substr(0, pos);
+                                            std::stringstream sel_path_ss;
+                                            sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << element.first.adjacent_sibling_rel_val << "']";
+                                            sel_attr.set_value(sel_path_ss.str().c_str());
+                                        }
                                     } else {
                                         std::cerr << "ERROR: Unexpected positional selector encountered! (" << element.first.relative_pos << ")" << std::endl;
                                         exit(1);
