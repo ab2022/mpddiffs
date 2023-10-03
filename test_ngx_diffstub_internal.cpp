@@ -145,7 +145,7 @@ TEST_CASE("TestReplaceAttrWithChild") {
 
 
 /* STANDARD ELEMENT TEST FUNCTIONS */
-TEST_CASE("TestAddStandardElementNoChild") {
+TEST_CASE("TestAddStandardElementNoChildBeginning") {
     const char* old_mpd = "./mpd_samples/test_cases/test_base_1.mpd";
     const char* new_mpd = "./mpd_samples/test_cases/test_add_elem_no_child.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_add_elem_no_child-patch.mpd";
@@ -243,6 +243,16 @@ TEST_CASE("TestAddConsecutiveSegmentToMiddleTimeline") {
     const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
     const char* new_mpd = "./mpd_samples/test_cases/test_origin_consecutive_segment_add_middle_timeline.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_consecutive_segment_add_middle_timeline-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}
+
+
+
+TEST_CASE("TestAddNonConsecutiveSegments") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_origin_non_cons_add_segment.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_non_cons_add_segment-patch.mpd";
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }

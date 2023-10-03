@@ -19,8 +19,8 @@
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate initialization="audio-0-$Bandwidth$-init.mp4" media="audio-0-$Bandwidth$-$Time$.mp4a" startNumber="859540274" timescale="48000">
         <SegmentTimeline>
+          <S d="92160" t="140292310672"/>
           <S d="92160" r="15" t="140292311872"/>
-          <S d="92270" r="16" t="140293320234"/>
         </SegmentTimeline>
       </SegmentTemplate>
       <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>

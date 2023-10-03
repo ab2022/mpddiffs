@@ -92,52 +92,129 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 }
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
-                pugi::xpath_query diff_query;
                 if (element.first.getName() == "S") {
                     //TODO: Rework Selector logic to check if an t or s selector is used for Segments
-                    // i.e. sel="/MPD/.../SegmentTimeline[1]/S[@t]"... this wont work though because not all segment adds will be adjacent
-                    // Do you need to duplicate the "ADD CHILD" logic or can we utilize it for segment and non segment types?
+                    // i.e. sel="/MPD/.../SegmentTimeline[1]/S[starts-with(@t, '/MPD/../SegmentTimeline[1]/S')]"
+                    // if element is found, retrieve all child elements
+                    // Loop through child elements, 
+                    // if last t||n matches an "after" positional t val, insert at end of list
+                    // Else create a new add entry
                     auto pos = element.first.getXPath().find_last_of("/");
                     std::string sel_xpath = element.first.getXPath().substr(0, pos);
                     std::stringstream query;
-                    query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
-                    diff_query = pugi::xpath_query(query.str().c_str());
+                    query << "Patch/add[starts-with(@sel, \"" << sel_xpath << "/S\")]";
+                    std::cerr << query.str();
+                    pugi::xpath_query diff_query(query.str().c_str());
+                    pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
+
+                    bool new_node = true;
+
+                    /*
+                    if (attr) {  // Check if the attribute exists
+                        const char* attrValue = attr.value();
+                        const char* expectedValue = element.first.adjacent_sibling_rel_val.c_str();
+
+                        if (strcmp(attrValue, expectedValue) == 0) {
+                            // The attribute value matches the expected value
+                        }
+                    } else {
+                        // Handle the case where the attribute does not exist
+                    }
+                    */
+
+
+                    // IF we have not encountered this selector before, add a new Segment, otherwise edit the existing 'ADD' selector
+                    if (!results.empty()) {
+                        for (const pugi::xpath_node& matched_xpath_node: results) {
+                            pugi::xml_node matched_patch_node = matched_xpath_node.node();
+                            for(pugi::xml_node child: matched_patch_node.children()) {
+                                pugi::xml_attribute attr = child.attribute(element.first.selector_attrib.c_str());
+                                const char* attr_value = attr.value();
+                                const char* expected_value = element.first.adjacent_sibling_rel_val.c_str();
+                                
+                                pugi::xml_node segment_elem;
+                                if (strcmp(attr_value, expected_value) == 0) {         // Existing t||n attribute value in patch matches attr selector
+                                    new_node = false;
+                                    if(element.first.relative_pos == "before") {         // Add element to list before specific element
+                                        segment_elem = matched_patch_node.insert_child_before(element.first.getName().c_str(), child);
+                                    } else if (element.first.relative_pos == "after") {  // Add element to list after specific element
+                                        segment_elem = matched_patch_node.insert_child_after(element.first.getName().c_str(), child);
+                                    } else {
+                                        std::cerr << "ERROR: Unexpected positional selector encountered! (" << element.first.relative_pos << ")" << std::endl;
+                                        exit(1);
+                                    }
+                                    
+                                    for (auto& attrib: element.first.getAttributes()) {
+                                        pugi::xml_attribute attribute = segment_elem.append_attribute(attrib.first.c_str());
+                                        attribute.set_value(attrib.second.c_str());
+                                    }
+
+                                    break;
+                                }
+
+                            }
+
+                            if (new_node == false) {
+                                break;
+                            }
+                            //TODO: Check for presence of node via t||n in each present add directive in patch
+                            // if node exists, add it into directive directly using positional attribute
+                            // If a node is not found, proceed to add a new segment
+                            // This should capture middle->end cases.  
+                            // There is an edge case that would need to be handled for injecting consecutive nodes at the beginning of a timeline
+                        }
+                    } 
+                    
+                    if (new_node) {                                                                    // Results are empty, Add a new segment
+                        pugi::xml_node add_directive = patch.append_child("add");
+
+                        pugi::xml_attribute sel_attr = add_directive.append_attribute("sel");
+                        std::string base_xpath = element.first.getXPath().substr(0, pos);
+                        std::stringstream sel_path_ss;
+                        sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << element.first.adjacent_sibling_rel_val << "']";
+                        sel_attr.set_value(sel_path_ss.str().c_str());
+
+                        pugi::xml_attribute pos_attr = add_directive.append_attribute("pos");
+                        pos_attr.set_value(element.first.relative_pos.c_str());
+
+                        pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
+                        for (auto& attrib: element.first.getAttributes()) {
+                            pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                            attribute.set_value(attrib.second.c_str());
+                        }
+                    } 
+
                 } else {
                     auto pos = element.first.getXPath().find_last_of("/");
                     std::string sel_xpath = element.first.getXPath().substr(0, pos);
                     std::stringstream query;
                     query << "Patch/add[@sel=\"" << sel_xpath << "\"]";
-                    diff_query = pugi::xpath_query(query.str().c_str());
-                }
-                
-                pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
+                    pugi::xpath_query diff_query(query.str().c_str());
+                    pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
+                    // IF we have not encountered this selector before, add a new element, otherwise edit the existing 'ADD' selector
+                    if (results.empty()) {
+                        pugi::xml_node add_directive = patch.append_child("add");
+                        pugi::xml_attribute attr = add_directive.append_attribute("sel");
 
-                // IF we have not encountered this selector before, add a new element, otherwise edit the existing 'ADD' selector
-                if (results.empty()) {
-                    pugi::xml_node add_directive = patch.append_child("add");
-                    pugi::xml_attribute attr = add_directive.append_attribute("sel");
+                        attr.set_value(element.first.getXPath().substr(0, pos).c_str());
 
-                    auto pos = element.first.getXPath().find_last_of("/");
-                    attr.set_value(element.first.getXPath().substr(0, pos).c_str());
+                        pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
+                        for (auto& attrib: element.first.getAttributes()) {
+                            pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                            attribute.set_value(attrib.second.c_str());
+                        }
+                    } else if (results.size() == 1) {
+                        pugi::xml_node matched_node = results.first().node();
 
-                    pugi::xml_node child = add_directive.append_child(element.first.getName().c_str());
-                    for (auto& attrib: element.first.getAttributes()) {
-                        pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
-                        attribute.set_value(attrib.second.c_str());
+                        pugi::xml_node child = matched_node.append_child(element.first.getName().c_str());
+                        for (auto& attrib: element.first.getAttributes()) {
+                            pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
+                            attribute.set_value(attrib.second.c_str());
+                        }
+                    } else {
+                        std::cerr << "ERROR: Result size in Diff Patch is > 1!" << std::endl;
+                        exit(1);
                     }
-
-
-                } else if (results.size() == 1) {
-                    pugi::xml_node matched_node = results.first().node();
-
-                    pugi::xml_node child = matched_node.append_child(element.first.getName().c_str());
-                    for (auto& attrib: element.first.getAttributes()) {
-                        pugi::xml_attribute attribute = child.append_attribute(attrib.first.c_str());
-                        attribute.set_value(attrib.second.c_str());
-                    }
-                } else {
-                    std::cerr << "ERROR: Result size in Diff Patch is > 1!" << std::endl;
-                    exit(1);
                 }
             } else if (element.second == "REPLACE") {
                 /*
@@ -253,6 +330,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     sel_path << element.first.getXPath().c_str();
                     sel_attr.set_value(sel_path.str().c_str());
                 }
+
             } else if (element.second == "REPLACE") {
                 pugi::xml_node replace_directive = patch.append_child("replace");
                 pugi::xml_attribute sel_attr = replace_directive.append_attribute("sel");
@@ -307,6 +385,7 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         XMLElement element;
         element.relative_pos = "";                  // Only Relative to segment positioning
         element.adjacent_sibling_rel_val = "";      // Only Relative to segment positioning
+        element.selector_attrib = "";
 
         element.type = NodeTypeToString(mpd1_node.type());
 
@@ -344,40 +423,29 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 id_ss << "[@id='" << id_val << "']";
                 xpath = xpath + id_ss.str();
             } else if (element.getName() == "S") {                     // is a Segment
-                auto t_itr = element.getAttributes().find("t");
-                auto n_itr = element.getAttributes().find("n");
-                if (t_itr != element.getAttributes().end()) {          // If t is present in segment
-                    std::string t_val = t_itr->second;
-                    std::stringstream t_ss;
-                    t_ss << "[@t='" << t_val << "']";
-                    xpath = xpath + t_ss.str();
-
-                    if(mpd1_node.parent().first_child() == mpd1_node) { // If this is the first element of SegmentTimeline
-                        element.relative_pos = "before";
-                        element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute("t").value();
-                    } else {
-                        // pos = after prev t val
-                        element.relative_pos = "after";
-                        element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute("t").value();
-                    }
-                } else if (n_itr != element.getAttributes().end()) {   // If n is present in segment
-                    std::string n_val = n_itr->second;
-                    std::stringstream n_ss;
-                    n_ss << "[@n='" << n_val << "']";
-                    xpath = xpath + n_ss.str();
-
-                    if(mpd1_node.parent().first_child() == mpd1_node) { // If this is the first element of SegmentTimeline
-                        element.relative_pos = "before";
-                        element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute("n").value();
-                    } else {
-                        // pos = after prev t val
-                        element.relative_pos = "after";
-                        element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute("n").value();
-                    }
+                if (element.getAttributes().find("t") != element.getAttributes().end()) {          // If t is present in segment
+                    element.selector_attrib = "t";
+                } else if (element.getAttributes().find("n") != element.getAttributes().end()) {   // If n is present in segment
+                    element.selector_attrib = "n";
                 } else {
                     std::cerr << "ERROR: No valid attributes to assign for addressing Segment (S)!" << std::endl;
                     exit(1);
                 }
+
+                auto selector_attrib_itr = element.getAttributes().find(element.selector_attrib);
+                std::string selector_attrib_val = selector_attrib_itr->second;
+                std::stringstream selector_attrib_ss;
+                selector_attrib_ss << "[@" << element.selector_attrib << "='" << selector_attrib_val << "']";
+                xpath = xpath + selector_attrib_ss.str();
+
+                if(mpd1_node.parent().first_child() == mpd1_node) {     // If this is the first element of SegmentTimeline use 'before' positional directive
+                    element.relative_pos = "before";
+                    element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute(element.selector_attrib.c_str()).value();
+                } else {                                                // Otherwise use 'after' positional directive
+                    element.relative_pos = "after";
+                    element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute(element.selector_attrib.c_str()).value();
+                }
+
             } else {                                                  // no addressing attributes found
                 index_map[xpath]++;
                 element.index = index_map[xpath];

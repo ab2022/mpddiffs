@@ -18,6 +18,7 @@ public:
     std::string type;
     std::string relative_pos;
     std::string adjacent_sibling_rel_val;
+    std::string selector_attrib;
 
     bool has_children;
 
