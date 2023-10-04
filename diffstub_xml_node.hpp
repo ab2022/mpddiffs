@@ -17,7 +17,8 @@ public:
     size_t index;
     std::string type;
     std::string relative_pos;
-    std::string adjacent_sibling_rel_val;
+    std::string prev_sibling_rel_val;
+    std::string next_sibling_rel_val;
     std::string selector_attrib;
 
     bool has_children;

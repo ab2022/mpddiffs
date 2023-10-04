@@ -18,6 +18,7 @@
     <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
       <SegmentTemplate availabilityTimeComplete="false" availabilityTimeOffset="0.801000" initialization="$RepresentationID$-init.mp4" media="$RepresentationID$-$Time$.m4s" presentationTimeOffset="960" timescale="48000">
         <SegmentTimeline>
+          <S d="96232" t="17468118456"/>
           <S d="96256" t="17468129456"/>
           <S d="95232" t="17468215712"/>
           <S d="96256" t="17468139456"/>

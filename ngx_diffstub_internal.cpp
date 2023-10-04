@@ -93,17 +93,10 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
             } else if (element.second == "ADD") {
                 // Search document on this current xpath, to combine list items (i.e. segments) in one directive
                 if (element.first.getName() == "S") {
-                    //TODO: Rework Selector logic to check if an t or s selector is used for Segments
-                    // i.e. sel="/MPD/.../SegmentTimeline[1]/S[starts-with(@t, '/MPD/../SegmentTimeline[1]/S')]"
-                    // if element is found, retrieve all child elements
-                    // Loop through child elements, 
-                    // if last t||n matches an "after" positional t val, insert at end of list
-                    // Else create a new add entry
                     auto pos = element.first.getXPath().find_last_of("/");
                     std::string sel_xpath = element.first.getXPath().substr(0, pos);
                     std::stringstream query;
                     query << "Patch/add[starts-with(@sel, \"" << sel_xpath << "/S\")]";
-                    std::cerr << query.str();
                     pugi::xpath_query diff_query(query.str().c_str());
                     pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
@@ -117,10 +110,16 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                             for(pugi::xml_node child: matched_patch_node.children()) {
                                 pugi::xml_attribute attr = child.attribute(element.first.selector_attrib.c_str());
                                 const char* attr_value = attr.value();
-                                const char* expected_value = element.first.adjacent_sibling_rel_val.c_str();
+                                const char* expected_value;
+
+                                if (strcmp(attr_value, "before") == 0) {
+                                    expected_value = element.first.next_sibling_rel_val.c_str();
+                                } else {
+                                    expected_value = element.first.prev_sibling_rel_val.c_str();
+                                } 
                                 
                                 pugi::xml_node segment_elem;
-                                if (strcmp(attr_value, expected_value) == 0) {         // Existing t||n attribute value in patch matches attr selector
+                                if (strcmp(attr_value, expected_value) == 0) {           // Existing t||n attribute value in patch matches attr selector
                                     new_node = false;
                                     if(element.first.relative_pos == "before") {         // Add element to list before specific element
                                         segment_elem = matched_patch_node.insert_child_before(element.first.getName().c_str(), child);
@@ -131,7 +130,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                                             pugi::xml_attribute sel_attr = matched_patch_node.attribute("sel");
                                             std::string base_xpath = element.first.getXPath().substr(0, pos);
                                             std::stringstream sel_path_ss;
-                                            sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << element.first.adjacent_sibling_rel_val << "']";
+                                            sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << element.first.next_sibling_rel_val << "']";
                                             sel_attr.set_value(sel_path_ss.str().c_str());
                                         }
                                     } else {
@@ -165,8 +164,16 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
 
                         pugi::xml_attribute sel_attr = add_directive.append_attribute("sel");
                         std::string base_xpath = element.first.getXPath().substr(0, pos);
+
+                        std::string adjacent_sibling_rel_val;
+                        if (element.first.relative_pos == "before") {
+                            adjacent_sibling_rel_val = element.first.next_sibling_rel_val;
+                        } else {
+                            adjacent_sibling_rel_val = element.first.prev_sibling_rel_val;
+                        }
+
                         std::stringstream sel_path_ss;
-                        sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << element.first.adjacent_sibling_rel_val << "']";
+                        sel_path_ss << base_xpath << "/S[@" << element.first.selector_attrib << "='" << adjacent_sibling_rel_val << "']";
                         sel_attr.set_value(sel_path_ss.str().c_str());
 
                         pugi::xml_attribute pos_attr = add_directive.append_attribute("pos");
@@ -379,8 +386,9 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
         xpath = xpath + "/" + mpd1_node.name();
         XMLElement element;
         element.relative_pos = "";                  // Only Relative to segment positioning
-        element.adjacent_sibling_rel_val = "";      // Only Relative to segment positioning
-        element.selector_attrib = "";
+        element.prev_sibling_rel_val = "";          // Only Relative to segment positioning
+        element.next_sibling_rel_val = "";          // Only Relative to segment positioning
+        element.selector_attrib = "";               // Only Relative to segment positioning
 
         element.type = NodeTypeToString(mpd1_node.type());
 
@@ -435,13 +443,17 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
 
                 if(mpd1_node.parent().first_child() == mpd1_node) {     // If this is the first element of SegmentTimeline use 'before' positional directive
                     element.relative_pos = "before";
-                    element.adjacent_sibling_rel_val = mpd1_node.next_sibling().attribute(element.selector_attrib.c_str()).value();
+                    element.next_sibling_rel_val = mpd1_node.next_sibling().attribute(element.selector_attrib.c_str()).value();
                 } else {                                                // Otherwise use 'after' positional directive
                     element.relative_pos = "after";
-                    element.adjacent_sibling_rel_val = mpd1_node.previous_sibling().attribute(element.selector_attrib.c_str()).value();
+                    element.prev_sibling_rel_val = mpd1_node.previous_sibling().attribute(element.selector_attrib.c_str()).value();
+                    if (mpd1_node.parent().last_child() != mpd1_node) {
+                        element.next_sibling_rel_val = mpd1_node.next_sibling().attribute(element.selector_attrib.c_str()).value();
+                    }
+                    
                 }
 
-            } else {                                                  // no addressing attributes found
+            } else {                                                    // no addressing attributes found
                 index_map[xpath]++;
                 element.index = index_map[xpath];
                 std::stringstream idx_ss;
