@@ -393,6 +393,31 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
 
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                     "diffstub manifest.mpd not found, skipping morph_diffs");
+
+        ////
+        // Add patch location to incoming manifest.mpd
+        ////
+
+        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                    "before add_patch_location: \"%s\"", temp->data);
+        
+        // Extract publishTime from existing mpd
+        const char *incomingPublishTime = extractPublishTime((const char*)temp->data);
+
+        int incomingPublishTimeLength = strlen(incomingPublishTime);
+
+        // Allocate memory for the concatenated string
+        char *resultingPatchLocationPath = (char*)malloc(patchLocationPathLength + incomingPublishTimeLength + 1);
+        strcpy(resultingPatchLocationPath,patchLocationPath);
+        strcpy(resultingPatchLocationPath+patchLocationPathLength,incomingPublishTime);
+
+        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
+        
+        // Save right back to (const char*)temp->data
+        diffstub_save_file((char*)mpd_with_patch_location, (char*)temp->data, r);
+        
+        free((void*) mpd_with_patch_location);
+        free(resultingPatchLocationPath);
     }
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
