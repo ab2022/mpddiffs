@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="https://dashif.org/" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" availabilityStartTime="2023-09-15T14:47:07Z" maxSegmentDuration="PT2.016S" minBufferTime="PT1S" minimumUpdatePeriod="PT2S" profiles="urn:mpeg:dash:profile:isoff-live:2011" publishTime="2023-09-19T19:54:37Z" timeShiftBufferDepth="PT4M16S" type="dynamic" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd http://dashif.org/guidelines/ContentProtection laurl.xsd" id="?">
+  <PatchLocation ttl="140">/dash/Service2/live-stream/patch.mpd-2023-09-19T19:54:37Z</PatchLocation>
+  <Period id="P0" start="PT0S">
+    <AdaptationSet contentType="video" id="0" maxFrameRate="60000/1001" maxHeight="1080" maxWidth="1920" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <SegmentTemplate availabilityTimeComplete="false" availabilityTimeOffset="0.801000" initialization="$RepresentationID$-init.mp4" media="$RepresentationID$-$Time$.m4s" timescale="60000">
+        <SegmentTimeline>
+          <S d="120120" r="63" t="21835173360"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation bandwidth="750000" codecs="avc1.4d401f" frameRate="30000/1001" height="360" id="Video1_5" sar="1:1" scanType="progressive" width="640"/>
+      <Representation bandwidth="1200000" codecs="avc1.4d4020" frameRate="30000/1001" height="540" id="Video1_4" sar="1:1" scanType="progressive" width="960"/>
+      <Representation bandwidth="2150000" codecs="avc1.4d4020" frameRate="60000/1001" height="540" id="Video1_3" sar="1:1" scanType="progressive" width="960"/>
+      <Representation bandwidth="5880000" codecs="avc1.640029" frameRate="60000/1001" height="720" id="Video1_2" sar="1:1" scanType="progressive" width="1280"/>
+      <Representation bandwidth="8000000" codecs="avc1.64002a" frameRate="60000/1001" height="1080" id="Video1_1" sar="1:1" scanType="progressive" width="1920"/>
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" id="1" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate availabilityTimeComplete="false" availabilityTimeOffset="0.801000" initialization="$RepresentationID$-init.mp4" media="$RepresentationID$-$Time$.m4s" presentationTimeOffset="960" timescale="48000">
+        <SegmentTimeline>
+          <S d="96256" t="17468139456"/>
+          <S d="95232" t="17468235712"/>
+          <S d="96256" r="4" t="17468330944"/>
+          <S d="95232" t="17468812224"/>
+          <S d="96256" r="5" t="17468907456"/>
+          <S d="95232" t="17469484992"/>
+          <S d="96256" r="4" t="17469580224"/>
+          <S d="95232" t="17470061504"/>
+          <S d="96256" r="5" t="17470156736"/>
+          <S d="95232" t="17470734272"/>
+          <S d="96256" r="4" t="17470829504"/>
+          <S d="95232" t="17471310784"/>
+          <S d="96256" r="4" t="17471406016"/>
+          <S d="95232" t="17471887296"/>
+          <S d="96256" r="5" t="17471982528"/>
+          <S d="95232" t="17472560064"/>
+          <S d="96256" r="4" t="17472655296"/>
+          <S d="95232" t="17473136576"/>
+          <S d="96256" r="5" t="17473231808"/>
+          <S d="95232" t="17473809344"/>
+          <S d="96256" r="3" t="17473904576"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      <Representation audioSamplingRate="48000" bandwidth="192000" codecs="mp4a.40.2" id="Audio2_6"/>
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" id="2" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate availabilityTimeComplete="false" availabilityTimeOffset="0.801000" initialization="$RepresentationID$-init.mp4" media="$RepresentationID$-$Time$.m4s" timescale="48000">
+        <SegmentTimeline>
+          <S d="95232" t="17468140032"/>
+          <S d="96768" t="17468235264"/>
+          <S d="95232" t="17468332032"/>
+          <S d="96768" t="17468427264"/>
+          <S d="95232" t="17468524032"/>
+          <S d="96768" r="1" t="17468619264"/>
+          <S d="95232" t="17468812800"/>
+          <S d="96768" t="17468908032"/>
+          <S d="95232" t="17469004800"/>
+          <S d="96768" t="17469100032"/>
+          <S d="95232" t="17469196800"/>
+          <S d="96768" t="17469292032"/>
+          <S d="95232" t="17469388800"/>
+          <S d="96768" r="1" t="17469484032"/>
+          <S d="95232" t="17469677568"/>
+          <S d="96768" t="17469772800"/>
+          <S d="95232" t="17469869568"/>
+          <S d="96768" t="17469964800"/>
+          <S d="95232" t="17470061568"/>
+          <S d="95232" t="17470061570"/>
+          <S d="96768" r="1" t="17470156800"/>
+          <S d="95232" t="17470350336"/>
+          <S d="96768" t="17470445568"/>
+          <S d="95232" t="17470542336"/>
+          <S d="96768" t="17470637568"/>
+          <S d="95232" t="17470734336"/>
+          <S d="96768" t="17470829568"/>
+          <S d="95232" t="17470926336"/>
+          <S d="96768" r="1" t="17471021568"/>
+          <S d="95232" t="17471215104"/>
+          <S d="96768" t="17471310336"/>
+          <S d="95232" t="17471407104"/>
+          <S d="96768" t="17471502336"/>
+          <S d="95232" t="17471599104"/>
+          <S d="96768" r="1" t="17471694336"/>
+          <S d="95232" t="17471887872"/>
+          <S d="96768" t="17471983104"/>
+          <S d="95232" t="17472079872"/>
+          <S d="96768" t="17472175104"/>
+          <S d="95232" t="17472271872"/>
+          <S d="96768" t="17472367104"/>
+          <S d="95232" t="17472463872"/>
+          <S d="96768" r="1" t="17472559104"/>
+          <S d="95232" t="17472752640"/>
+          <S d="96768" t="17472847872"/>
+          <S d="95232" t="17472944640"/>
+          <S d="96768" t="17473039872"/>
+          <S d="95232" t="17473136640"/>
+          <S d="96768" r="1" t="17473231872"/>
+          <S d="95232" t="17473425408"/>
+          <S d="96768" t="17473520640"/>
+          <S d="95232" t="17473617408"/>
+          <S d="96768" t="17473712640"/>
+          <S d="95232" t="17473809408"/>
+          <S d="96768" t="17473904640"/>
+          <S d="95232" t="17474001408"/>
+          <S d="96768" r="1" t="17474096640"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <AudioChannelConfiguration schemeIdUri="tag:dolby.com,2014:dash:audio_channel_configuration:2011" value="a000"/>
+      <Representation audioSamplingRate="48000" bandwidth="192000" codecs="ec-3" id="Audio3_7"/>
+    </AdaptationSet>
+  </Period>
+  <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso&amp;ms"/>
+</MPD>

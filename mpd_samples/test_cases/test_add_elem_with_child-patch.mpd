@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Patch xmlns="urn:mpeg:dash:schema:mpd-patch:2020" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd" mpdId="?" originalPublishTime="2022-05-22T17:22:10Z" publishTime="2022-05-22T17:22:12Z">
-        <replace sel="/MPD[1]/@publishTime">2022-05-22T17:22:12Z</replace>
-        <add sel="/MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']">
-                <SegmentTemplate timescale="48000" media="audio-1-$Bandwidth$-$Time$.mp4a" initialization="audio-1-$Bandwidth$-init.mp4" startNumber="859540274">
-                    <SegmentTimeline>
-                        <S t="140292311872" r="18" d="92160" />
-                    </SegmentTimeline>
-                </SegmentTemplate>
-        </add>
+  <replace sel="/MPD[1]/@publishTime">2022-05-22T17:22:12Z</replace>
+  <add sel="/MPD[1]/Period[@id='P0']/AdaptationSet[@id='1']">
+    <SegmentTemplate timescale="48000" media="audio-1-$Bandwidth$-$Time$.mp4a" initialization="audio-1-$Bandwidth$-init.mp4" startNumber="859540274">
+      <SegmentTimeline>
+        <S t="140292311872" r="18" d="92160"/>
+        <S d="92160" t="140292312872"/>
+      </SegmentTimeline>
+    </SegmentTemplate>
+  </add>
 </Patch>
