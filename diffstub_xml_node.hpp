@@ -2,6 +2,7 @@
 #define DIFFSTUB_XML_NODE_HPP
 
 #include <string>
+#include <iostream>
 #include <unordered_map>
 #include <set>
 #include <sstream>
@@ -14,7 +15,7 @@ private:
     std::string value;
     //std::vector<XMLElement> children;
 public:
-    size_t index;
+    int index;
     std::string type;
     std::string relative_pos;
     std::string prev_sibling_rel_val;
@@ -30,6 +31,8 @@ public:
     const std::string& getName() const;
 
     const std::unordered_map<std::string, std::string>& getAttributes() const;
+
+    const std::string get_compare_str() const;
 
     void setValue(std::string value);
 

@@ -395,21 +395,25 @@ std::string NodeTypeToString(pugi::xml_node_type type) {
  * - in XPath queuries for elements that do not contain an "id" attribute
 */
 void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd2, std::unordered_map<std::string, XMLElement>& diffset, std::unordered_map<std::string, u_int>& index_map, std::string xpath="") {
+    XMLElement element;
+    element.relative_pos = "";                  // Only Relative to segment positioning
+    element.prev_sibling_rel_val = "";          // Only Relative to segment positioning
+    element.next_sibling_rel_val = "";          // Only Relative to segment positioning
+    element.selector_attrib = "";               // Only Relative to segment positioning
+    element.type = NodeTypeToString(mpd1_node.type());
+    element.index = -1;
+
+    if (mpd1_node.children().empty()) {
+        element.has_children = false;
+    } else {
+        element.has_children = true;
+    }
+
     if (mpd1_node.type() == pugi::node_element) {
         xpath = xpath + "/" + mpd1_node.name();
-        XMLElement element;
-        element.relative_pos = "";                  // Only Relative to segment positioning
-        element.prev_sibling_rel_val = "";          // Only Relative to segment positioning
-        element.next_sibling_rel_val = "";          // Only Relative to segment positioning
-        element.selector_attrib = "";               // Only Relative to segment positioning
+        index_map[xpath]++;
+        element.index = index_map[xpath];
 
-        element.type = NodeTypeToString(mpd1_node.type());
-
-        if (mpd1_node.children().empty()) {
-            element.has_children = false;
-        } else {
-            element.has_children = true;
-        }
         element.setName(mpd1_node.name());
         std::string full_query;
 
@@ -469,16 +473,16 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 }
 
             } else {                                                    // no addressing attributes found
-                index_map[xpath]++;
-                element.index = index_map[xpath];
+                //index_map[xpath]++;
+                //element.index = index_map[xpath];
                 std::stringstream idx_ss;
                 idx_ss << "[" << index_map[xpath] << "]";
                 xpath = xpath + idx_ss.str();
             }
 
         } else {
-            index_map[xpath]++;
-            element.index = index_map[xpath];
+            //index_map[xpath]++;
+            //element.index = index_map[xpath];
             full_query = xpath;
             std::stringstream idx_ss;
             idx_ss << "[" << index_map[xpath] << "]";
@@ -523,10 +527,9 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             process_node(mpd1_child, mpd2, diffset, index_map, xpath);
         }
     } else if (mpd1_node.type() == pugi::node_pcdata) {
-        XMLElement element;
-        element.type = NodeTypeToString(mpd1_node.type());
         //If node is a text node, we must process it differently
         xpath = xpath + "/text()";
+        index_map[xpath]++;
         element.setXPath(xpath);
         element.setValue(mpd1_node.value());
         element.has_children = false;

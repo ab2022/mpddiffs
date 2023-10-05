@@ -16,6 +16,23 @@ const std::unordered_map<std::string, std::string>& XMLElement::getAttributes() 
     return this->attributes;
 }
 
+const std::string XMLElement::get_compare_str() const {
+    std::stringstream compare_ss;
+
+    if (this->type == "Text") {                            
+        compare_ss << this->xpath;                         //Text Nodes have no index (Not supported by dash.js?)
+    } else if (this->name == "S") {    
+        auto pos = this->xpath.find_last_of("/");          //Element is a Segment, modify the xpath using Segment Index
+        compare_ss << this->xpath.substr(0, pos)  << "/" << this->name << "/" << this->index;
+        auto it = this->attributes.find(this->selector_attrib);
+        compare_ss << "/@" << it->first << "=" << it->second;
+    } else {
+        compare_ss << this->xpath << "/" << this->index;   //All other elements, Use index to maintain Element order
+    }
+
+    return compare_ss.str();
+}
+
 void XMLElement::setValue(std::string value) {
     this->value = value;
 }
@@ -78,18 +95,29 @@ bool XMLElement::operator==(const XMLElement& other) const {
     return true;
 }
 
-bool XMLElement::operator<(const XMLElement& other) const {
-    std::stringstream this_compare_ss;
+
+bool XMLElement::operator<(const XMLElement& other) const {    
+    /*
     this_compare_ss << this->xpath << " ";
     for (const auto& attr: this->attributes) {
         this_compare_ss << attr.first << "=" << attr.second;
     }
+    */
+    //std::cerr << "THIS XPATH: " << this->xpath << std::endl;
+    //std::cerr << "OTHER XPATH: " << other.getXPath() << std::endl;
 
-    std::stringstream other_compare_ss;
+    std::string this_compare = this->get_compare_str();
+    std::string other_compare = other.get_compare_str();
+
+    //std::cerr << "THIS Compare: " << this_compare << std::endl;
+    //std::cerr << "OTHER Compare: " << other_compare << std::endl;
+    
+    /*
     other_compare_ss << other.xpath << " ";
     for (const auto& attr: other.attributes) {
         other_compare_ss << attr.first << "=" << attr.second;
-    } 
+    }
+    */
 
-    return this_compare_ss.str() < other_compare_ss.str();
+    return this_compare < other_compare;
 }
