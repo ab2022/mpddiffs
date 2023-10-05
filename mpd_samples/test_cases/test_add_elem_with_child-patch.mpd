@@ -5,6 +5,7 @@
     <SegmentTemplate timescale="48000" media="audio-1-$Bandwidth$-$Time$.mp4a" initialization="audio-1-$Bandwidth$-init.mp4" startNumber="859540274">
       <SegmentTimeline>
         <S t="140292311872" r="18" d="92160"/>
+        <S d="92160" t="140292312872"/>
       </SegmentTimeline>
     </SegmentTemplate>
   </add>

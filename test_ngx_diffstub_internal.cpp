@@ -172,7 +172,6 @@ TEST_CASE("TestReplaceStandardElementNoChild") {
 }
 
 
-#if 0
 // This is currently not passing the test, but has a valid MPD Patch output
 // Implement for small optimization
 TEST_CASE("TestAddStandardElementWithChildren") {
@@ -182,7 +181,6 @@ TEST_CASE("TestAddStandardElementWithChildren") {
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
-#endif
 
 
 TEST_CASE("TestRemoveStandardElementWithChildren") {
@@ -261,6 +259,24 @@ TEST_CASE("TestAddConsecutiveSegmentsBeginning") {
     const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
     const char* new_mpd = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning.mpd";
     const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}
+
+
+TEST_CASE("TestAddConsecutiveSegmentsBeginning") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_origin_cons_add_segment_beginning-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}
+
+
+TEST_CASE("TestReplaceSingletonList") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_replace_singleton_list_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_replace_singleton_list_2.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_replace_singleton_list-patch.mpd";
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
