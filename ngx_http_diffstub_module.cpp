@@ -390,10 +390,12 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         free(resultingPatchFilePath);
     }
     else{
+        
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                    "diffstub manifest.mpd not found, skipping morph_diffs");
 
         ////
         // Add patch location to incoming manifest.mpd
-        // Using existing mpd's publishTime
         ////
 
         ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -410,31 +412,12 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         strcpy(resultingPatchLocationPath+patchLocationPathLength,incomingPublishTime);
 
         const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
-
-        // Save right back to (const char*)temp->data
-        FILE *file = fopen((const char*)temp->data, "w");
         
-        if(file == NULL){
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be opened", temp->data);
-        }
-
-        size_t dataSize = strlen(mpd_with_patch_location);
-        size_t elementsWritten = fwrite(mpd_with_patch_location, sizeof(char), dataSize, file);
-
-        // Confirm data was written successfully
-        if (elementsWritten != dataSize) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "diffstub temp filename: \"%s\" could not be written", temp->data);
-        }
-
-        // Free memory
-        fclose(file);
+        // Save right back to (const char*)temp->data
+        diffstub_save_file((char*)mpd_with_patch_location, (char*)temp->data, r);
+        
         free((void*) mpd_with_patch_location);
         free(resultingPatchLocationPath);
-        
-        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                    "diffstub manifest.mpd not found, adding patchLocation and mpd only - no morph_diffs");
     }
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
