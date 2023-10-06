@@ -390,7 +390,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         free(resultingPatchFilePath);
     }
     else{
-
+        
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                     "diffstub manifest.mpd not found, skipping morph_diffs");
 
@@ -421,7 +421,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
     }
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "after morph_diffs");
+                   "After Overall Process..");
 
     if (ngx_file_info(path.data, &fi) == NGX_FILE_ERROR) {
         status = NGX_HTTP_CREATED;
