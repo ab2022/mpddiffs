@@ -373,7 +373,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         strcpy(resultingPatchLocationPath,patchLocationPath);
         strcpy(resultingPatchLocationPath+patchLocationPathLength,incomingPublishTime);
 
-        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
+        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "6.7");
         
         // Save right back to (const char*)temp->data
         diffstub_save_file((char*)mpd_with_patch_location, (char*)temp->data, r);
@@ -411,7 +411,7 @@ ngx_http_diffstub_put_handler(ngx_http_request_t *r)
         strcpy(resultingPatchLocationPath,patchLocationPath);
         strcpy(resultingPatchLocationPath+patchLocationPathLength,incomingPublishTime);
 
-        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "240");
+        const char* mpd_with_patch_location = add_patch_location((const char*)temp->data, "?", resultingPatchLocationPath, "6.7");
         
         // Save right back to (const char*)temp->data
         diffstub_save_file((char*)mpd_with_patch_location, (char*)temp->data, r);
