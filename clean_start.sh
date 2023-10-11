@@ -10,7 +10,7 @@ sudo rm /var/log/nginx/error.log.*
 sudo rm /var/log/error.log
 sudo rm /var/log/access.log
 
-echo 'Refreshing live-stream directory...'
+echo 'Refreshing live-stream (patch) directory...'
 rm -rf /dev/shm/dash/Service2/live-stream
 mkdir -p /dev/shm/dash/Service2/live-stream
 
