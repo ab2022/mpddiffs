@@ -9,6 +9,7 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 ## Requirements
 - C++ 11
 - NGINX 1.18.0 ~ (Only tested with Ubuntu 20.04)
+- DASH.JS (Nightly Build) - (HTTP only) http://reference.dashif.org/dash.js/nightly/samples/dash-if-reference-player/index.html
 
 ## Shell Scripts
 - ```ship_to_server.sh``` - Runs locally, Ships source code to external server
@@ -49,10 +50,15 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
     ```
     
     - To Stop: `sudo service nginx stop`
+
+- DASH.JS
+    - Open Nightly Build: http://reference.dashif.org/dash.js/nightly/samples/dash-if-reference-player/index.html
+    - Enter Origin IP and MPD location and 'load'
     
 
 
 # Current Limitations
+    - Only Support for HTTP streams (no DRM)
     - Hardcoded TTL/Patch Headers
     - Issue with Adding nested elements (i.e. adding a new element that contains grandchildren, currently WIP but incomplete)
     - Issue with multiple directives (add/rem/rep) on a single element (Not Implemented)
