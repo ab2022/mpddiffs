@@ -271,3 +271,12 @@ TEST_CASE("TestReplaceSingletonList") {
     
     REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
 }
+
+
+TEST_CASE("TestAddReplaceRemAttrib") {
+    const char* old_mpd = "./mpd_samples/test_cases/test_origin_1.mpd";
+    const char* new_mpd = "./mpd_samples/test_cases/test_add_rep_rem_attrib.mpd";
+    const char* mpd_patch_val_file = "./mpd_samples/test_cases/test_replace_singleton_list-patch.mpd";
+    
+    REQUIRE(execute_test_case(old_mpd, new_mpd, mpd_patch_val_file));
+}

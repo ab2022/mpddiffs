@@ -30,7 +30,7 @@ pugi::xml_node get_parent_directive(const XMLElement& element, const pugi::xml_d
     for (size_t i = 0; i < delim_ct - 2; i++) {   // Check for elements 1 level below MPD (cannot add MPD)
         std::stringstream query;
         query << "/Patch/" << directive << "[@sel=\"" << sel_xpath << "\"]";
-        std::cout << "Parent Sel: " << query.str() << std::endl;
+        //std::cerr << "Parent Sel: " << query.str() << std::endl;
         pugi::xpath_query diff_query(query.str().c_str());
         pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
@@ -96,6 +96,7 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                 pugi::xml_node parent_directive = get_parent_directive(element.first, diff_patch, "add");
                 if (!parent_directive.empty()) {   // If parent Exists
                     std::string parent_sel = parent_directive.attribute("sel").value();
+                    std::cerr << "TAG: Entering Nested Directive Block!!" << std::endl;
                     std::cerr << "Element Name: " << element.first.getName() << std::endl;
                     std::cerr << "Full XPath: " << element.first.getXPath() << std::endl;
                     std::cerr << "Add Directive 'sel': " << parent_sel << std::endl;
@@ -111,8 +112,9 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                     //Make Functtion modular and use here? -> add child element
                     pugi::xpath_node_set results;
                     if (element.first.getName() == "S") {
-                        std::cerr << "ELEMENT!" << std::endl;
+                        std::cerr << "TAG: S Nested ELEMENT!" << std::endl;
                     } else {
+                        std::cerr << "TAG: Standard Nested Element!" << std::endl;
                         auto last_bracket_start_pos = next_child_xpath.find_last_of("[");
                         results = parent_directive.select_nodes(next_child_xpath.substr(0, last_bracket_start_pos).c_str()); //TODO
                         std::cerr << next_child_xpath.substr(0, last_bracket_start_pos) << std::endl;
@@ -521,16 +523,12 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
                 }
 
             } else {                                                    // no addressing attributes found
-                //index_map[xpath]++;
-                //element.index = index_map[xpath];
                 std::stringstream idx_ss;
                 idx_ss << "[" << index_map[xpath] << "]";
                 xpath = xpath + idx_ss.str();
             }
 
-        } else {
-            //index_map[xpath]++;
-            //element.index = index_map[xpath];
+        } else {                                                        // no attributes present
             full_query = xpath;
             std::stringstream idx_ss;
             idx_ss << "[" << index_map[xpath] << "]";
@@ -663,19 +661,18 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     /***************
     Create Diff Sets
     ****************/
-    pugi::xml_node client_root = old_doc.child("MPD");
-    
+    pugi::xml_node old_root = old_doc.child("MPD");
     // contains elements missing in current MPD
     std::unordered_map<std::string, u_int> new_imap;
-    std::unordered_map<std::string, XMLElement> new_missing;
-    process_node(client_root, new_doc, new_missing, new_imap);
+    std::unordered_map<std::string, XMLElement> new_missing;                       // Elements Present in old Doc, missing in new
+    process_node(old_root, new_doc, new_missing, new_imap);
 
 
-    pugi::xml_node current_root = new_doc.child("MPD");
+    pugi::xml_node new_root = new_doc.child("MPD");
     // contains elements missing in client MPD
     std::unordered_map<std::string, u_int> old_imap;
-    std::unordered_map<std::string, XMLElement> old_missing;
-    process_node(current_root, old_doc, old_missing, old_imap);
+    std::unordered_map<std::string, XMLElement> old_missing;                       // Elements Present in New Doc, missing in old 
+    process_node(new_root, old_doc, old_missing, old_imap);
 
     /*
         If we use a set instead of a map, the combination of S Path + attributes will make unique objects,
@@ -694,7 +691,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     std::map<XMLElement, std::string> delta_map;
     for (const auto& pair: new_missing) {
         auto it = old_missing.find(pair.first);
-        // If entry exist in client missing
+        // If entry exist in old missing
         if (it != old_missing.end()) {
             // Add element to update_map with 'REPLACE' operation
             if(it->second.has_children) {
@@ -713,6 +710,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
                     add_attr.setName(it->second.getName());
                     add_attr.index = it->second.index;
                     add_attr.has_children = true;
+                    std::cerr << "Key " << add_attr.getXPath() << " exists but contains attribute deltas in the old MPD (w/ Children), Setting Tag to ADDATTR..." << std::endl;
                     delta_map[add_attr] = "ADDATTR";
                 }
                 
@@ -731,6 +729,7 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
                     rem_attr.setName(it->second.getName());
                     rem_attr.index = it->second.index;
                     rem_attr.has_children = true;
+                    std::cerr << "Key " << rem_attr.getXPath() << " exists but contains attribute deltas in the old MPD (w/ Children), Setting Tag to REMATTR..." << std::endl;
                     delta_map[rem_attr] = "REMATTR";
                 }
 
@@ -751,25 +750,37 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
                     rep_attr.setName(it->second.getName());
                     rep_attr.index = it->second.index;
                     rep_attr.has_children = true;
+                    std::cerr << "Key " << rep_attr.getXPath() << " exists but contains attribute deltas in the old MPD (w/ Children), Setting Tag to REPATTR..." << std::endl;
                     delta_map[rep_attr] = "REPATTR";
                 }
                 
                 
             } else {
+                std::cerr << "Key " << pair.first << " exists but contains attribute deltas in the old MPD (no Children), Setting Tag to REPLACE..." << std::endl;
                 delta_map[it->second] = "REPLACE";
             }
 
-            // Erase the entry from the client map
-            old_missing.erase(it->first);
+
+            auto miss_it = old_missing.find(it->first);
+            if (miss_it != old_missing.end()) {
+                std::cerr << "Found Key " << it->first << " was successfully cleaned from old missing" << std::endl;
+                old_missing.erase(it);
+            } else {
+                // Element with key 'some_key' was not found in the map
+                std::cerr << "ERROR: Key " << it->first << " was not found in old missing! Could not erase!" << std::endl;
+                exit(1);
+            }
+
             
         } else {
-            std::cerr << "Key " << pair.first << " does not exist in the map." << std::endl;
+            std::cerr << "Key " << pair.first << " does not exist in the old MPD, Setting Tag to REMOVE..." << std::endl;
             // Add element to update_map with 'REMOVE' operation
             delta_map[pair.second] = "REMOVE";
         }
     }
     // What is left in the client_missing map should be 'ADDED'
     for (const auto& pair: old_missing) {
+        std::cerr << "Key " << pair.first << " does not exist in the new MPD, Setting Tag to ADD..." << std::endl;
         delta_map[pair.second] = "ADD";
     }
 
@@ -799,6 +810,8 @@ const char* morph_diffs(const char* old_mpd, const char* new_mpd) {
     Create Diff File And Return
     ****************/
     std::string diff_patch_str = translate_deltas(delta_map, old_ptime, new_ptime);
+
+    std::cerr << "OUTPUT PATCH:\n" << diff_patch_str << std::endl;
 
     // Allocate memory for the C-style string and copy the content, if we dont do this the string object is destroyed on
     // function return and we are left with a dangling pointer.  Need to make sure to free memory in NGINX module (or main for testing)!
