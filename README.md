@@ -1,5 +1,5 @@
 # Diffstub
-Started from Alex Balk's (abalk200_comcast) diffstub project.  Code contributions from Erik Ponder (eponde494_comcast) and Jovan Rosario (jriver829_comcast)
+Started from Alex Balk's (abalk200_comcast) diffstub project. Special thanks to Alex Giladi (Comcast) for contributing concepts and solutions to the project.  Code contributions from Erik Ponder (eponde494_comcast) and Jovan Rosario (jriver829_comcast)
 
 ## Info
 This is a standalone NGINX C++ module for generateting an RF5261 (https://datatracker.ietf.org/doc/html/rfc5261) compliant MPED-DASH patch from 2 MPD files.  This uses the PugiXML library to generate patch files. This software is in a development phase where features are being added and tested, and it may not be stable or feature-complete.
