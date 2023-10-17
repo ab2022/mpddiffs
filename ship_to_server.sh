@@ -4,18 +4,18 @@ source_path="../diffstub"
 destination_user="ubuntu"
 destination_host="35.88.227.80"
 destination_port="20202"
-destination_path="/home/ubuntu/diffstub"
+destination_path="~/diffstub"
 
 # Exclude git-related files using the --exclude flag with tar
 tar --exclude=".git" --exclude=".gitignore" --exclude="mpd_samples" -czf /tmp/archive.tar.gz -C $source_path .
 echo 'tar created'
 
 # Take Diffstub backup
-ssh -p $destination_port $destination_user@$destination_host "mv /home/ubuntu/diffstub /home/ubuntu/diffstub_$(date +%s)_backup"
+ssh -p $destination_port $destination_user@$destination_host "mv $destination_path ${destination_path}_$(date +%s)_backup"
 echo 'diffstub backed up'
 
 # Create new empty diffstub directory
-ssh -p $destination_port $destination_user@$destination_host "mkdir /home/ubuntu/diffstub"
+ssh -p $destination_port $destination_user@$destination_host "mkdir $destination_path"
 echo 'diffstub created'
 
 # Transfer the archived files to the VM using scp

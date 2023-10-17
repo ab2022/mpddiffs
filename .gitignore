@@ -1,5 +1,6 @@
 *.dSYM/
 stream_session/
 stream_session.*
+*.zip
 diffstub
 test_ngx_diffstub_internal

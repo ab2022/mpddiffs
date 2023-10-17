@@ -8,7 +8,7 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 
 ## Requirements
 - C++ 11
-- NGINX 1.18.0
+- NGINX 1.18.0 ~ (Only tested with Ubuntu 20.04)
 
 ## Shell Scripts
 - ```ship_to_server.sh``` - Runs locally, Ships source code to external server
@@ -25,6 +25,32 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 
     - Run Tests:
     ```./test_ngx_diffstub_internal```
+
+# Setup
+
+ - ORIGIN: Download and extract NGINX 1.18.0 source code to home directory ~
+ ```
+ cd ~
+ wget http://nginx.org/download/nginx-1.18.0.tar.gz
+ tar -zxvf nginx-1.18.0.tar.gz
+```
+- LOCAL: Edit `ship_to_server.sh` with your origin servers user ip and port, and Run:
+```
+./ship_to_server.sh
+```
+- ORIGIN: 
+    - Copy the `nginx_diffstub.conf` to `/etc/nginx/nginx/conf`, or add the required lines to existing conf.  You can use `nginx_diffstub.conf` for reference
+    ```
+    sudo cp nginx_diffstub.conf /etc/nginx/nginx.conf
+    ```
+    -  Edit `run_on_server.sh` with nginx source location, if different than home (~), and Run.  This will compile the diffstub module and start nginx
+    ```
+    ./run_on_server
+    ```
+    
+    - To Stop: `sudo service nginx stop`
+    
+
 
 # Current Limitations
     - Hardcoded TTL/Patch Headers

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Should be run as on the server
 
-nginx_source="/home/ubuntu/nginx-1.18.0"
+nginx_source="~/nginx-1.18.0"
 
 # Compile
 cd $nginx_source &&\
