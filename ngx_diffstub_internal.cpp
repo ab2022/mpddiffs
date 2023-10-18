@@ -1,6 +1,21 @@
 /*
- * Copyright (C) ab
+Copyright 2023 Comcast
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Author: Erik Ponder, Jovan Rosario, Alex Balk
  */
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -30,7 +45,6 @@ pugi::xml_node get_parent_directive(const XMLElement& element, const pugi::xml_d
     for (size_t i = 0; i < delim_ct - 2; i++) {   // Check for elements 1 level below MPD (cannot add MPD)
         std::stringstream query;
         query << "/Patch/" << directive << "[@sel=\"" << sel_xpath << "\"]";
-        //std::cerr << "Parent Sel: " << query.str() << std::endl;
         pugi::xpath_query diff_query(query.str().c_str());
         pugi::xpath_node_set results = diff_patch.select_nodes(diff_query);
 
@@ -208,11 +222,6 @@ std::string translate_deltas(const std::map<XMLElement, std::string>& deltas, st
                                 if (new_node == false) {
                                     break;
                                 }
-                                //TODO: Check for presence of node via t||n in each present add directive in patch
-                                // if node exists, add it into directive directly using positional attribute
-                                // If a node is not found, proceed to add a new segment
-                                // This should capture middle->end cases.  
-                                // There is an edge case that would need to be handled for injecting consecutive nodes at the beginning of a timeline
                             }
                         } 
                         
@@ -484,11 +493,9 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             full_query = xpath + elem_attr_filter_ss.str();
 
             auto id_itr = element.getAttributes().find("id");
-            // TODO Implement S@t or (mutex) S@n addressing
             if (id_itr != element.getAttributes().end()) {             // 'id' attribute found
                 std::string id_val = id_itr->second;
                 element.selector_attrib = "id";
-
                 std::stringstream id_ss;
                 id_ss << "[@id='" << id_val << "']";
                 xpath = xpath + id_ss.str();
@@ -534,10 +541,6 @@ void process_node(const pugi::xml_node& mpd1_node, const pugi::xml_document& mpd
             idx_ss << "[" << index_map[xpath] << "]";
             xpath = xpath + idx_ss.str();
         }
-
-        // Check if node exists in mpd2
-        // Need to write logic that addreses this (check if a child is a text note before proceeding?)
-        // i.e. If node has only 1 child and is of type PCDATA...
 
         pugi::xpath_query element_query(full_query.c_str());
         pugi::xpath_node_set results = mpd2.select_nodes(element_query);
