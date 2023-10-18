@@ -10,6 +10,7 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 - C++ 11
 - NGINX 1.18.0 ~ (Only tested with Ubuntu 20.04)
 - DASH.JS (Nightly Build) - (HTTP only) http://reference.dashif.org/dash.js/nightly/samples/dash-if-reference-player/index.html
+- Shell Environment to execute scripts (LOCAL)
 
 ## Shell Scripts
 - ```ship_to_server.sh``` - Runs locally, Ships source code to external server
@@ -29,22 +30,34 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 
 # Setup
 
- - ORIGIN: Download and extract NGINX 1.18.0 source code to home directory ~
- ```
- cd ~
- wget http://nginx.org/download/nginx-1.18.0.tar.gz
- tar -zxvf nginx-1.18.0.tar.gz
-```
-- LOCAL: Edit `ship_to_server.sh` with your origin servers user ip and port, and Run:
-```
-./ship_to_server.sh
-```
+ - ORIGIN: 
+    - Download and extract NGINX 1.18.0 source code to home directory ~
+    ```
+    cd ~
+    wget http://nginx.org/download/nginx-1.18.0.tar.gz
+    tar -zxvf nginx-1.18.0.tar.gz
+    ```
+- LOCAL: 
+    - Export the following ENV vars
+    ```
+    export $ORIGIN_HOST=<YOUR_ORIGIN_HOST_IP>
+    export $ORIGIN_SSH_PORT=<ORIGIN_SSH_HOST_PORT>
+    export $ORIGIN_USER=<ORIGIN_USER>  # e.g. ubuntu
+    ```
+    OR
+    Edit `ship_to_server.sh` with your origin servers user, ip, and port.
+    - Execute `ship_to_server.sh`:
+    ```
+    ./ship_to_server.sh
+    ```
 - ORIGIN: 
     - Copy the `nginx_diffstub.conf` to `/etc/nginx/nginx/conf`, or add the required lines to existing conf.  You can use `nginx_diffstub.conf` for reference
     ```
     sudo cp nginx_diffstub.conf /etc/nginx/nginx.conf
     ```
-    -  Edit `run_on_server.sh` with nginx source location, if different than home (~), and Run.  This will compile the diffstub module and start nginx
+    -  ***IF NGINX Source is installed in a different location than home (~), Edit `run_on_server.sh`.
+
+    - Execute `run_on_server.sh`.  This will compile the diffstub module and start nginx
     ```
     ./run_on_server
     ```
@@ -58,8 +71,10 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
 
 
 # Current Limitations
-    - Only Support for HTTP streams (no DRM)
+    - Only Supports HTTP streams (no DRM)
     - Hardcoded TTL/Patch Headers
     - Issue with Adding nested elements (i.e. adding a new element that contains grandchildren, currently WIP but incomplete)
     - Issue with multiple directives (add/rem/rep) on a single element (Not Implemented)
-    - NOTE: Failing test cases have been disabled for now
+    - Does not provide legitimate error responses.
+    
+    NOTE: Failing test cases have been disabled for now
