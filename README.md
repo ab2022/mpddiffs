@@ -45,14 +45,17 @@ https://github.com/MPEGGroup/DASHSchema/blob/5th-Ed-AMD1/DASH-MPD.xsd
     export $ORIGIN_USER=<ORIGIN_USER>  # e.g. ubuntu
     ```
     OR
-    Edit `ship_to_server.sh` with your origin servers user, ip, and port.
+    Edit `ship_to_server.sh` with your origin servers user, ip, and port. This will ship the source code
+    to your home (~) directory
     - Execute `ship_to_server.sh`:
     ```
+    cd <Project-Dir>
     ./ship_to_server.sh
     ```
 - ORIGIN: 
     - Copy the `nginx_diffstub.conf` to `/etc/nginx/nginx/conf`, or add the required lines to existing conf.  You can use `nginx_diffstub.conf` for reference
     ```
+    cd ~/diffstub
     sudo cp nginx_diffstub.conf /etc/nginx/nginx.conf
     ```
     -  ***IF NGINX Source is installed in a different location than home (~), Edit `run_on_server.sh`.
